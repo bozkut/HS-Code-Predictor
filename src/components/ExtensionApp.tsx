@@ -122,7 +122,15 @@ export const ExtensionApp = () => {
         {/* Footer */}
         <div className="text-center py-4 border-t">
           <p className="text-xs text-muted-foreground">
-            Powered by AI • For reference only
+            <a 
+              href="https://www.toolsy.io/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+            >
+              Powered by Toolsy AI
+            </a>
+            {" • Built for customs compliance • Always verify critical classifications"}
           </p>
         </div>
       </div>

@@ -218,7 +218,15 @@ const Index = () => {
         <div className="container mx-auto px-6 py-8">
           <div className="text-center text-muted-foreground">
             <p className="text-sm">
-              Powered by Toolsy AI • Built for customs compliance • 
+              <a 
+                href="https://www.toolsy.io/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                Powered by Toolsy AI
+              </a>
+              {" • Built for customs compliance • "}
               <span className="text-primary ml-1">Always verify critical classifications</span>
             </p>
           </div>
