@@ -179,7 +179,7 @@ export class HTSLookupService {
         ...officialMatches.map(match => ({
           hsCode: match.code,
           description: match.description,
-          confidence: 0.95, // High confidence for official matches
+          confidence: 95, // High confidence for official matches (95%)
           category: match.category,
           isOfficialMatch: true,
           officialEntry: match,
