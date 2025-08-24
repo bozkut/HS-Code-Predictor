@@ -5,6 +5,7 @@ import { CheckCircle, AlertCircle, Info, ExternalLink, Shield, Globe, FileText, 
 import { Button } from '@/components/ui/button';
 import { HSCodePrediction } from '@/types/product';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FeedbackForm } from './FeedbackForm';
 
 interface PredictionResultsProps {
   predictions: HSCodePrediction[];
@@ -245,6 +246,14 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
           ))}
         </CardContent>
       </Card>
+
+      {/* Feedback Form for Best Match */}
+      {predictions.length > 0 && (
+        <FeedbackForm 
+          predictionCode={predictions[0].code}
+          predictionDescription={predictions[0].description}
+        />
+      )}
 
       {/* Confidence Guidelines */}
       <Card className="shadow-card border-border/50">
