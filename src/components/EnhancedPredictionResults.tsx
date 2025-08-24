@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, XCircle, AlertTriangle, Clock, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, ThumbsUp, ThumbsDown, MessageSquare, ExternalLink, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -185,6 +185,61 @@ export const EnhancedPredictionResults: React.FC<EnhancedPredictionResultsProps>
         </CardContent>
       </Card>
 
+      {/* Official Verification Reference */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <Shield className="h-5 w-5" />
+            Official HTS Verification
+          </CardTitle>
+          <CardDescription className="text-blue-700">
+            Always verify HTS codes with the official U.S. International Trade Commission database
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 mb-3">
+                <strong>How to verify these predictions:</strong>
+              </p>
+              <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+                <li>Visit the official USITC HTS database</li>
+                <li>Search for the HTS codes provided above</li>
+                <li>Review the complete classification text and notes</li>
+                <li>Verify your product matches the official description</li>
+                <li>Check for any special requirements or exclusions</li>
+              </ol>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://hts.usitc.gov/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Official USITC HTS Database
+              </a>
+              
+              <a
+                href={`https://hts.usitc.gov/search?query=${encodeURIComponent(candidates[0]?.code || '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Search Top Prediction
+              </a>
+            </div>
+            
+            <div className="text-xs text-blue-600 bg-white p-3 rounded border border-blue-200">
+              <strong>Disclaimer:</strong> These AI predictions are for reference only. Always consult the official USITC database and consider seeking professional customs brokerage advice for high-value shipments or complex classifications.
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Top Candidates */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Top HTS Code Candidates</h3>
@@ -246,8 +301,19 @@ export const EnhancedPredictionResults: React.FC<EnhancedPredictionResultsProps>
                 )}
 
                 {candidate.officialSource && (
-                  <div className="text-xs text-muted-foreground">
-                    Source: {candidate.officialSource}
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">
+                      Source: {candidate.officialSource}
+                    </div>
+                    <a
+                      href={`https://hts.usitc.gov/search?query=${encodeURIComponent(candidate.code)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Verify on USITC
+                    </a>
                   </div>
                 )}
               </div>
@@ -255,6 +321,81 @@ export const EnhancedPredictionResults: React.FC<EnhancedPredictionResultsProps>
           </Card>
         ))}
       </div>
+
+      {/* Additional Resources */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Additional Resources & Verification
+          </CardTitle>
+          <CardDescription>
+            Professional tools and resources for HTS classification
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Official Resources</h4>
+                <div className="space-y-2 text-sm">
+                  <a
+                    href="https://hts.usitc.gov/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    USITC HTS Database
+                  </a>
+                  <a
+                    href="https://www.cbp.gov/trade/rulings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    CBP Ruling Letters
+                  </a>
+                  <a
+                    href="https://www.cbp.gov/trade/priority-issues/trade-modernization/informed-compliance-publications"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    CBP Informed Compliance
+                  </a>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Why Verification Matters</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Ensures customs compliance</li>
+                  <li>• Avoids penalties and delays</li>
+                  <li>• Confirms duty rates and trade agreements</li>
+                  <li>• Validates special restrictions or requirements</li>
+                </ul>
+              </div>
+            </div>
+            
+            <Separator />
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-yellow-800 mb-1">Professional Advice Recommended</p>
+                  <p className="text-yellow-700">
+                    For high-value shipments, complex products, or when in doubt, consult with a licensed customs broker or trade attorney familiar with your specific industry and products.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Feedback Section */}
       <Card>
