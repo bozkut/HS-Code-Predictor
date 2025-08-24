@@ -126,7 +126,7 @@ export const ExtensionApp = () => {
               href="https://www.toolsy.io/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
+              className="hover:text-primary transition-colors font-bold"
             >
               Powered by Toolsy AI
             </a>
