@@ -11,6 +11,7 @@ import { analyzeProduct } from '@/utils/mockAnalysis';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductData, AnalysisResults } from '@/types/product';
+import { ExternalLink } from 'lucide-react';
 import heroImage from '@/assets/hero-customs.jpg';
 
 interface EnhancedPredictionResult {
@@ -218,13 +219,15 @@ const Index = () => {
         <div className="container mx-auto px-6 py-8">
           <div className="text-center text-muted-foreground">
             <p className="text-sm">
+              Powered by{" "}
               <a 
                 href="https://www.toolsy.io/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-primary transition-colors font-bold"
+                className="hover:text-primary transition-colors font-bold inline-flex items-center gap-1"
               >
-                Powered by Toolsy AI
+                Toolsy AI
+                <ExternalLink className="h-3 w-3" />
               </a>
               {" • Built for customs compliance • "}
               <span className="text-primary ml-1">Always verify critical classifications</span>

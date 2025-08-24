@@ -5,7 +5,7 @@ import { PredictionResults } from "./PredictionResults";
 import { AnalysisResults, ProductData } from "../types/product";
 import { analyzeProduct } from "../utils/mockAnalysis";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Target, Shield } from "lucide-react";
+import { Sparkles, Target, Shield, ExternalLink } from "lucide-react";
 
 export const ExtensionApp = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -122,13 +122,15 @@ export const ExtensionApp = () => {
         {/* Footer */}
         <div className="text-center py-4 border-t">
           <p className="text-xs text-muted-foreground">
+            Powered by{" "}
             <a 
               href="https://www.toolsy.io/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:text-primary transition-colors font-bold"
+              className="hover:text-primary transition-colors font-bold inline-flex items-center gap-1"
             >
-              Powered by Toolsy AI
+              Toolsy AI
+              <ExternalLink className="h-3 w-3" />
             </a>
             {" • Built for customs compliance • Always verify critical classifications"}
           </p>
