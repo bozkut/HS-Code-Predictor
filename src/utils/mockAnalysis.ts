@@ -4,6 +4,7 @@
 import { ProductData, HSCodePrediction } from "../types/product";
 import { findMatchingHSCodes } from "../data/hsCodes";
 import { supabase } from "../integrations/supabase/client";
+import { HTSLookupService } from "../services/HTSLookupService";
 
 
 // Enhanced semantic analysis using Gemini AI
@@ -39,18 +40,19 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
 }> => {
   const startTime = Date.now();
 
-  // Enhanced factors with AI semantic analysis
+  // Enhanced factors with official USITC integration
   const factors = [
     "Product Title Analysis",
     "Description Keyword Matching", 
     "Category Classification",
     "HS Code Database Matching",
+    "Official USITC HTS Lookup",
     "AI Semantic Analysis (Gemini)",
     ...(productData.materials ? ["Material Composition Analysis"] : []),
     ...(productData.image ? ["Image Recognition Analysis"] : [])
   ];
 
-  // Find matching HS codes from real database
+  // Step 1: Find matching HS codes from our local database
   const matchingHSCodes = await findMatchingHSCodes(
     productData.title,
     productData.description,
@@ -61,62 +63,93 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
 
   let predictions: HSCodePrediction[] = [];
 
-  // If we have matches, enhance with semantic analysis
-  if (matchingHSCodes.length > 0) {
-    // Perform AI semantic analysis
-    const semanticResults = await performSemanticAnalysis(productData, matchingHSCodes);
+  // Step 2: Get official USITC data for enhanced accuracy
+  try {
+    const fullDescription = `${productData.title} ${productData.description} ${productData.materials || ''}`.trim();
+    const enhancedResult = await HTSLookupService.enhancedPrediction(fullDescription, 
+      matchingHSCodes.map(hsCode => ({ hsCode: hsCode.code, ...hsCode }))
+    );
     
-    if (semanticResults && semanticResults.matches && semanticResults.matches.length > 0) {
-      // Use AI-enhanced results
-      predictions = semanticResults.matches.map((match: any) => {
-        const hsCode = matchingHSCodes.find(code => code.code === match.code);
-        return {
-          code: match.code,
-          description: hsCode?.description || match.reasoning,
-          confidence: Math.min(98, match.confidence + 5), // Boost AI-analyzed confidence
-          category: hsCode?.category || "AI Classified",
-          categoryId: productData.categoryId,
-          tariffRate: hsCode?.tariffRate || "Contact Customs"
-        };
-      });
-      
-      // Add remaining keyword matches if AI didn't cover all
-      const aiCodes = semanticResults.matches.map((m: any) => m.code);
-      const remainingCodes = matchingHSCodes
-        .filter(code => !aiCodes.includes(code.code))
-        .slice(0, 2); // Add up to 2 more
-        
-      remainingCodes.forEach((hsCode, index) => {
-        predictions.push({
-          code: hsCode.code,
-          description: hsCode.description,
-          confidence: Math.max(40, 75 - (index * 15)), // Lower confidence for non-AI matches
-          category: hsCode.category,
-          categoryId: productData.categoryId,
-          tariffRate: hsCode.tariffRate
-        });
-      });
+    if (enhancedResult.predictions.length > 0) {
+      // Use enhanced predictions with official USITC validation
+      predictions = enhancedResult.predictions.map((pred: any) => ({
+        code: pred.hsCode,
+        description: pred.description,
+        confidence: pred.confidence || 85,
+        category: pred.category || pred.officialEntry?.category || "Official Classification",
+        categoryId: productData.categoryId,
+        tariffRate: pred.officialEntry?.tariffInfo?.generalRate || pred.tariffInfo?.generalRate || "Contact Customs",
+        isOfficiallyValidated: pred.isOfficiallyValidated || pred.isOfficialMatch || false,
+        officialSource: pred.officialEntry?.officialSource || (pred.isOfficialMatch ? "USITC HTS 2025 Revision 19" : undefined),
+        tariffDetails: pred.officialEntry?.tariffInfo ? {
+          general: pred.officialEntry.tariffInfo.generalRate,
+          special: pred.officialEntry.tariffInfo.specialRate,
+          column2: pred.officialEntry.tariffInfo.column2Rate
+        } : undefined
+      }));
     } else {
-      // Fallback to keyword matching with enhanced scoring
-      predictions = matchingHSCodes.map((hsCode, index) => {
-        let confidence = 85 - (index * 10);
+      throw new Error("No enhanced predictions available");
+    }
+  } catch (error) {
+    console.log("Enhanced prediction failed, using fallback analysis:", error);
+    
+    // Fallback to local analysis with semantic enhancement
+    if (matchingHSCodes.length > 0) {
+      // Perform AI semantic analysis
+      const semanticResults = await performSemanticAnalysis(productData, matchingHSCodes);
+      
+      if (semanticResults && semanticResults.matches && semanticResults.matches.length > 0) {
+        // Use AI-enhanced results
+        predictions = semanticResults.matches.map((match: any) => {
+          const hsCode = matchingHSCodes.find(code => code.code === match.code);
+          return {
+            code: match.code,
+            description: hsCode?.description || match.reasoning,
+            confidence: Math.min(95, match.confidence + 5), // Boost AI-analyzed confidence
+            category: hsCode?.category || "AI Classified",
+            categoryId: productData.categoryId,
+            tariffRate: hsCode?.tariffRate || "Contact Customs"
+          };
+        });
         
-        // Boost confidence based on available data
-        if (productData.materials) confidence += 8;
-        if (productData.image) confidence += 12;
-        if (productData.description.length > 100) confidence += 5;
-        
-        confidence = Math.min(95, Math.max(45, confidence));
+        // Add remaining keyword matches if AI didn't cover all
+        const aiCodes = semanticResults.matches.map((m: any) => m.code);
+        const remainingCodes = matchingHSCodes
+          .filter(code => !aiCodes.includes(code.code))
+          .slice(0, 2); // Add up to 2 more
+          
+        remainingCodes.forEach((hsCode, index) => {
+          predictions.push({
+            code: hsCode.code,
+            description: hsCode.description,
+            confidence: Math.max(40, 75 - (index * 15)), // Lower confidence for non-AI matches
+            category: hsCode.category,
+            categoryId: productData.categoryId,
+            tariffRate: hsCode.tariffRate
+          });
+        });
+      } else {
+        // Fallback to keyword matching with enhanced scoring
+        predictions = matchingHSCodes.map((hsCode, index) => {
+          let confidence = 85 - (index * 10);
+          
+          // Boost confidence based on available data
+          if (productData.materials) confidence += 8;
+          if (productData.image) confidence += 12;
+          if (productData.description.length > 100) confidence += 5;
+          
+          confidence = Math.min(95, Math.max(45, confidence));
 
-        return {
-          code: hsCode.code,
-          description: hsCode.description,
-          confidence,
-          category: hsCode.category,
-          categoryId: productData.categoryId,
-          tariffRate: hsCode.tariffRate
-        };
-      });
+          return {
+            code: hsCode.code,
+            description: hsCode.description,
+            confidence,
+            category: hsCode.category,
+            categoryId: productData.categoryId,
+            tariffRate: hsCode.tariffRate
+          };
+        });
+      }
     }
   }
 

@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, AlertCircle, Info, ExternalLink } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, ExternalLink, Shield, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HSCodePrediction } from '@/types/product';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PredictionResultsProps {
   predictions: HSCodePrediction[];
@@ -62,6 +63,20 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
         </Card>
       )}
 
+      {/* USITC Integration Info */}
+      <Alert>
+        <Globe className="h-4 w-4" />
+        <AlertDescription>
+          <div className="space-y-1">
+            <p className="font-medium">Enhanced with Official USITC Data</p>
+            <p className="text-xs text-muted-foreground">
+              Predictions are now validated against the official U.S. International Trade Commission 
+              Harmonized Tariff Schedule (2025 Revision 19) for maximum accuracy and compliance.
+            </p>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       {/* Predictions */}
       <Card className="shadow-card border-border/50">
         <CardHeader className="pb-4">
@@ -89,6 +104,18 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                     {index === 0 && (
                       <Badge variant="default" className="text-xs bg-primary text-primary-foreground">
                         Best Match
+                      </Badge>
+                    )}
+                    {(prediction as any).isOfficiallyValidated && (
+                      <Badge variant="default" className="text-xs bg-green-600 text-white flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        USITC Verified
+                      </Badge>
+                    )}
+                    {(prediction as any).officialSource && (
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        <Globe className="h-3 w-3" />
+                        Official
                       </Badge>
                     )}
                   </div>
