@@ -14,186 +14,376 @@ interface HSCodeEntry {
   tariffRate?: string;
   changeType?: string;
   effectiveDate?: string;
+  chapterInfo?: {
+    number: string;
+    title: string;
+    description: string;
+  };
+  additionalInfo?: {
+    dutyRate: string;
+    specialPrograms: string[];
+    restrictions: string[];
+    notes: string[];
+    tradeData?: {
+      commonUses: string[];
+      complianceNotes: string[];
+      relatedCodes: string[];
+    };
+  };
 }
 
-function extractHSCodes(text: string): HSCodeEntry[] {
+interface ProcessingStats {
+  totalExtracted: number;
+  byChapter: Record<string, number>;
+  changeTypes: Record<string, number>;
+  documentType: string;
+  revision: string;
+}
+
+function extractHSCodes(text: string, filename?: string): { entries: HSCodeEntry[], stats: ProcessingStats } {
   const entries: HSCodeEntry[] = [];
+  let chapterStats: Record<string, number> = {};
+  let changeTypeStats: Record<string, number> = {};
   
-  // Common patterns for HS codes in HTS documents
+  // Detect document type and revision
+  const documentType = detectDocumentType(filename, text);
+  const revision = extractRevision(filename, text);
+  
+  // Enhanced patterns for different HTS formats
   const hsCodePatterns = [
-    /(\d{4}\.\d{2}\.\d{2})\s+([^0-9]+?)(?=\d{4}\.\d{2}\.\d{2}|$)/gs,
-    /(\d{4}\.\d{2})\s+([^0-9]+?)(?=\d{4}\.\d{2}|$)/gs,
-    /(\d{10})\s+([^0-9]+?)(?=\d{10}|$)/gs,
-    /Chapter\s+(\d+)\s*[-–]\s*([^0-9]+?)(?=Chapter|\d{4}|$)/gi
+    // Standard 10-digit format: 1234.56.78.90
+    /^(\d{4}\.\d{2}\.\d{2}\.\d{2})\s+(.+)$/,
+    // 8-digit format: 1234.56.78
+    /^(\d{4}\.\d{2}\.\d{2})\s+(.+)$/,
+    // 6-digit format: 1234.56
+    /^(\d{4}\.\d{2})\s+(.+)$/,
+    // Simple 10-digit: 1234567890
+    /^(\d{10})\s+(.+)$/,
+    // Simple 8-digit: 12345678
+    /^(\d{8})\s+(.+)$/,
+    // Change record format with line numbers
+    /^(\d{4}\.\d{2}\.\d{2})\s+(\d+)\s+(Add|Delete|Modify|Change)\s+(.+)$/i,
   ];
 
   // Pattern for change records (Add, Delete, Modify)
-  const changePattern = /(Add|Delete|Modify|New|Revise|Replace)\s*:?\s*/gi;
+  const changePattern = /(Add|Delete|Modify|New|Revise|Replace|Insert|Remove)/gi;
   
   // Pattern for tariff rates
-  const tariffPattern = /(\d+(?:\.\d+)?%|Free|See\s+chapter)/gi;
+  const tariffPattern = /(\d+(?:\.\d+)?%|Free|See\s+chapter|\$\d+(?:\.\d+)?)/gi;
   
   // Extract lines that look like HS code entries
   const lines = text.split(/\n|\r\n?/);
+  let currentChapter = '';
+  let currentChapterTitle = '';
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     
+    // Detect chapter headers
+    const chapterMatch = line.match(/^Chapter\s+(\d{1,2})\s*[:\-\s]*(.*)$/i) ||
+                        line.match(/^(\d{1,2})\s*[:\-\s]*(.+)$/) ||
+                        line.match(/^CHAPTER\s+(\d{1,2})\s*(.*)$/i);
+    
+    if (chapterMatch) {
+      currentChapter = chapterMatch[1].padStart(2, '0');
+      currentChapterTitle = chapterMatch[2].trim();
+      continue;
+    }
+    
     // Look for HS codes in various formats
     for (const pattern of hsCodePatterns) {
-      const matches = [...line.matchAll(pattern)];
+      const match = line.match(pattern);
       
-      for (const match of matches) {
-        const code = match[1];
-        let description = match[2]?.trim() || '';
+      if (match) {
+        let code = match[1];
+        let description = match[2];
+        let changeType = '';
+        
+        // Handle change record format with line numbers
+        if (match.length > 4) {
+          changeType = match[3];
+          description = match[4];
+        }
         
         // Clean up description
         description = description
           .replace(/\s+/g, ' ')
-          .replace(/[^\w\s,.-]/g, '')
+          .replace(/[^\w\s,.\-()]/g, '')
           .trim();
         
         if (description.length < 10) continue; // Skip very short descriptions
         
-        // Extract change type
-        const changeMatch = line.match(changePattern);
-        const changeType = changeMatch ? changeMatch[1] : undefined;
+        // Extract change type if not already detected
+        if (!changeType) {
+          const changeMatch = line.match(changePattern);
+          changeType = changeMatch ? changeMatch[1] : '';
+        }
         
-        // Extract tariff rate
-        const tariffMatch = description.match(tariffPattern);
-        const tariffRate = tariffMatch ? tariffMatch[0] : undefined;
+        // Extract additional information from surrounding lines
+        const additionalInfo = extractAdditionalInfo(lines, i, code);
         
-        // Generate keywords from description
-        const keywords = description
-          .toLowerCase()
-          .split(/[,;\s]+/)
-          .filter(word => word.length > 2 && !/^(the|and|for|with|of|in|to|a|an)$/.test(word))
-          .slice(0, 10);
+        // Generate enhanced keywords
+        const keywords = generateEnhancedKeywords(description + ' ' + additionalInfo.notes.join(' '));
         
         // Determine category based on HS code prefix
-        let category = "General Merchandise";
-        const codePrefix = code.substring(0, 2);
+        const chapterNumber = currentChapter || code.substring(0, 2);
+        const category = getCategoryFromChapter(chapterNumber);
         
-        const categoryMap: Record<string, string> = {
-          "01": "Live Animals",
-          "02": "Meat and Edible Meat Offal", 
-          "03": "Fish and Crustaceans",
-          "04": "Dairy Products",
-          "05": "Animal Products",
-          "06": "Live Trees and Plants",
-          "07": "Edible Vegetables",
-          "08": "Edible Fruits and Nuts",
-          "09": "Coffee, Tea, Spices",
-          "10": "Cereals",
-          "11": "Milling Products",
-          "12": "Oil Seeds and Fruits",
-          "13": "Vegetable Extracts",
-          "14": "Vegetable Plaiting Materials",
-          "15": "Animal or Vegetable Fats",
-          "16": "Meat and Fish Preparations",
-          "17": "Sugars and Sugar Confectionery",
-          "18": "Cocoa and Cocoa Preparations",
-          "19": "Cereal Preparations",
-          "20": "Vegetable and Fruit Preparations",
-          "21": "Miscellaneous Edible Preparations",
-          "22": "Beverages and Spirits",
-          "23": "Food Industry Residues",
-          "24": "Tobacco",
-          "25": "Salt, Sulfur, Earth and Stone",
-          "26": "Ores, Slag and Ash",
-          "27": "Mineral Fuels and Oils",
-          "28": "Inorganic Chemicals",
-          "29": "Organic Chemicals",
-          "30": "Pharmaceutical Products",
-          "31": "Fertilizers",
-          "32": "Tanning and Dyeing Extracts",
-          "33": "Essential Oils and Cosmetics",
-          "34": "Soap and Cleaning Preparations",
-          "35": "Protein Substances",
-          "36": "Explosives",
-          "37": "Photographic Products",
-          "38": "Miscellaneous Chemical Products",
-          "39": "Plastics and Articles Thereof",
-          "40": "Rubber and Articles Thereof",
-          "41": "Raw Hides and Skins",
-          "42": "Leather Articles",
-          "43": "Furskins and Artificial Fur",
-          "44": "Wood and Wood Articles",
-          "45": "Cork and Cork Articles",
-          "46": "Basketware",
-          "47": "Pulp and Waste Paper",
-          "48": "Paper and Paperboard",
-          "49": "Printed Books and Newspapers",
-          "50": "Silk",
-          "51": "Wool and Animal Hair",
-          "52": "Cotton",
-          "53": "Vegetable Textile Fibers",
-          "54": "Manmade Filaments",
-          "55": "Manmade Staple Fibers",
-          "56": "Wadding and Felt",
-          "57": "Carpets and Textile Floor Coverings",
-          "58": "Special Woven Fabrics",
-          "59": "Impregnated Textile Fabrics",
-          "60": "Knitted or Crocheted Fabrics",
-          "61": "Knitted or Crocheted Apparel",
-          "62": "Woven Apparel",
-          "63": "Other Textile Articles",
-          "64": "Footwear",
-          "65": "Headgear",
-          "66": "Umbrellas and Walking Sticks",
-          "67": "Prepared Feathers",
-          "68": "Stone, Cement, and Glass Articles",
-          "69": "Ceramic Products",
-          "70": "Glass and Glassware",
-          "71": "Pearls and Precious Stones",
-          "72": "Iron and Steel",
-          "73": "Iron and Steel Articles",
-          "74": "Copper and Copper Articles",
-          "75": "Nickel and Nickel Articles",
-          "76": "Aluminum and Aluminum Articles",
-          "78": "Lead and Lead Articles",
-          "79": "Zinc and Zinc Articles",
-          "80": "Tin and Tin Articles",
-          "81": "Other Base Metals",
-          "82": "Tools and Cutlery",
-          "83": "Miscellaneous Base Metal Articles",
-          "84": "Nuclear Reactors and Machinery",
-          "85": "Electrical Machinery",
-          "86": "Railway Locomotives",
-          "87": "Vehicles",
-          "88": "Aircraft and Spacecraft",
-          "89": "Ships and Boats",
-          "90": "Optical and Measuring Instruments",
-          "91": "Clocks and Watches",
-          "92": "Musical Instruments",
-          "93": "Arms and Ammunition",
-          "94": "Furniture and Bedding",
-          "95": "Toys and Sports Equipment",
-          "96": "Miscellaneous Manufactured Articles",
-          "97": "Works of Art"
+        // Chapter information with enhanced details
+        const chapterInfo = {
+          number: chapterNumber,
+          title: currentChapterTitle || getChapterTitle(chapterNumber),
+          description: getChapterDescription(chapterNumber)
         };
         
-        category = categoryMap[codePrefix] || category;
+        // Add trade-specific data
+        const tradeData = getTradeData(code, description, chapterNumber);
         
-        entries.push({
-          code,
+        const entry: HSCodeEntry = {
+          code: normalizeHSCode(code),
           description,
           category,
           keywords,
-          tariffRate,
-          changeType,
-          effectiveDate: "2025" // Based on the document name
-        });
+          tariffRate: additionalInfo.dutyRate || undefined,
+          changeType: changeType || undefined,
+          effectiveDate: revision,
+          chapterInfo,
+          additionalInfo: {
+            ...additionalInfo,
+            tradeData
+          }
+        };
+        
+        entries.push(entry);
+        
+        // Update statistics
+        chapterStats[chapterNumber] = (chapterStats[chapterNumber] || 0) + 1;
+        if (changeType) {
+          changeTypeStats[changeType] = (changeTypeStats[changeType] || 0) + 1;
+        }
+        
+        break;
       }
     }
   }
   
-  return entries;
+  const stats: ProcessingStats = {
+    totalExtracted: entries.length,
+    byChapter: chapterStats,
+    changeTypes: changeTypeStats,
+    documentType,
+    revision
+  };
+  
+  return { entries, stats };
 }
 
-function processOCRText(text: string): HSCodeEntry[] {
-  console.log("Processing OCR text, length:", text.length);
+function detectDocumentType(filename?: string, text?: string): string {
+  if (filename) {
+    if (filename.includes('Change') || filename.includes('change')) return 'Change Record';
+    if (filename.includes('Chapter') || filename.includes('chapter')) return 'Chapter Document';
+    if (filename.includes('General') || filename.includes('Notes')) return 'General Notes';
+    if (filename.includes('Cover')) return 'Cover Document';
+  }
+  
+  if (text) {
+    if (text.includes('Change Record') || text.includes('CHANGE RECORD')) return 'Change Record';
+    if (text.includes('General Notes') || text.includes('GENERAL NOTES')) return 'General Notes';
+  }
+  
+  return 'HTS Document';
+}
+
+function extractRevision(filename?: string, text?: string): string {
+  // Extract revision from filename (e.g., "2025HTSRev19")
+  const revisionMatch = (filename || text || '').match(/2025HTSRev(\d+)/i);
+  if (revisionMatch) {
+    return `2025 HTS Revision ${revisionMatch[1]}`;
+  }
+  
+  return '2025 HTS Revision';
+}
+
+function normalizeHSCode(code: string): string {
+  // Remove dots and ensure consistent formatting
+  const cleanCode = code.replace(/\./g, '');
+  return cleanCode.padEnd(10, '0');
+}
+
+function extractAdditionalInfo(lines: string[], currentIndex: number, code: string): {
+  dutyRate: string;
+  specialPrograms: string[];
+  restrictions: string[];
+  notes: string[];
+} {
+  const info = {
+    dutyRate: '',
+    specialPrograms: [] as string[],
+    restrictions: [] as string[],
+    notes: [] as string[]
+  };
+  
+  // Look at the next 5 lines for additional information
+  for (let j = currentIndex + 1; j < Math.min(currentIndex + 6, lines.length); j++) {
+    const line = lines[j].trim();
+    
+    // Skip if it looks like another HS code entry
+    if (line.match(/^\d{4}\.\d{2}/)) break;
+    
+    // Extract duty rates
+    const dutyMatch = line.match(/(\d+\.?\d*%|Free|Duty\s*free|\$\d+\.?\d*)/i);
+    if (dutyMatch && !info.dutyRate) {
+      info.dutyRate = dutyMatch[1];
+    }
+    
+    // Look for special trade programs
+    if (line.match(/(NAFTA|USMCA|GSP|CBI|ATPA|AGOA|MFN)/i)) {
+      const programs = line.match(/(NAFTA|USMCA|GSP|CBI|ATPA|AGOA|MFN)/gi);
+      if (programs) {
+        info.specialPrograms.push(...programs);
+      }
+    }
+    
+    // Look for restrictions or special conditions
+    if (line.match(/(license|permit|restriction|prohibition|quota|certificate|FDA|USDA|EPA|FTC)/i)) {
+      info.restrictions.push(line);
+    }
+    
+    // Collect general notes
+    if (line.length > 10 && line.length < 200 && !line.match(/^\d/)) {
+      info.notes.push(line);
+    }
+  }
+  
+  return info;
+}
+
+function generateEnhancedKeywords(text: string): string[] {
+  // Enhanced keyword extraction with trade-specific terms
+  const stopWords = new Set([
+    'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+    'from', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has',
+    'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
+    'must', 'shall', 'can', 'a', 'an', 'not', 'no', 'if', 'then', 'than', 'such',
+    'other', 'thereof', 'whether', 'nesoi', 'article', 'articles', 'part', 'parts'
+  ]);
+  
+  // Extract material and product keywords
+  const materialKeywords = text.match(/(cotton|wool|silk|leather|plastic|metal|glass|wood|rubber|steel|aluminum|gold|silver|ceramic|paper)/gi) || [];
+  const productKeywords = text.match(/(clothing|apparel|footwear|machinery|electronic|furniture|tool|instrument|vehicle|textile|toy|jewelry)/gi) || [];
+  
+  const words = text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.has(word))
+    .filter(word => !word.match(/^\d+$/));
+  
+  // Combine and deduplicate
+  const allKeywords = [...new Set([...materialKeywords, ...productKeywords, ...words])];
+  
+  return allKeywords.slice(0, 15).map(word => word.toLowerCase());
+}
+
+function getTradeData(code: string, description: string, chapter: string): {
+  commonUses: string[];
+  complianceNotes: string[];
+  relatedCodes: string[];
+} {
+  const tradeData = {
+    commonUses: [] as string[],
+    complianceNotes: [] as string[],
+    relatedCodes: [] as string[]
+  };
+  
+  // Chapter-specific trade information
+  const chapterTradeInfo: Record<string, any> = {
+    '39': {
+      commonUses: ['Packaging materials', 'Industrial components', 'Consumer products', 'Medical devices'],
+      complianceNotes: ['FDA approval may be required for food contact', 'Environmental regulations apply', 'Recycling codes required'],
+    },
+    '42': {
+      commonUses: ['Fashion accessories', 'Travel goods', 'Professional equipment', 'Luxury items'],
+      complianceNotes: ['CITES permits may be required for exotic leathers', 'Country of origin marking required'],
+    },
+    '61': {
+      commonUses: ['Fashion apparel', 'Activewear', 'Undergarments', 'Children\'s clothing'],
+      complianceNotes: ['Textile labeling requirements', 'Flammability standards', 'Child safety regulations'],
+    },
+    '84': {
+      commonUses: ['Manufacturing equipment', 'Industrial machinery', 'Commercial appliances', 'Construction equipment'],
+      complianceNotes: ['Safety certifications required', 'Environmental compliance', 'Energy efficiency standards'],
+    }
+  };
+  
+  const chapterInfo = chapterTradeInfo[chapter];
+  if (chapterInfo) {
+    tradeData.commonUses = chapterInfo.commonUses || [];
+    tradeData.complianceNotes = chapterInfo.complianceNotes || [];
+  }
+  
+  // Generate related codes (simplified logic)
+  const baseCode = code.substring(0, 4);
+  for (let i = 1; i <= 3; i++) {
+    const relatedCode = baseCode + '.' + (parseInt(code.substring(4, 6)) + i).toString().padStart(2, '0');
+    tradeData.relatedCodes.push(relatedCode);
+  }
+  
+  return tradeData;
+}
+
+function getCategoryFromChapter(chapter: string): string {
+  const categoryMap: Record<string, string> = {
+    "01": "Live Animals",
+    "02": "Meat and Edible Meat Offal", 
+    "03": "Fish and Crustaceans",
+    "04": "Dairy Products",
+    "05": "Animal Products",
+    "06": "Live Trees and Plants",
+    "07": "Edible Vegetables",
+    "08": "Edible Fruits and Nuts",
+    "09": "Coffee, Tea, Spices",
+    "10": "Cereals",
+    "39": "Plastics and Articles Thereof",
+    "40": "Rubber and Articles Thereof",
+    "42": "Leather Articles",
+    "44": "Wood and Wood Articles",
+    "50": "Silk",
+    "51": "Wool and Animal Hair",
+    "52": "Cotton",
+    "53": "Vegetable Textile Fibers",
+    "54": "Manmade Filaments",
+    "61": "Knitted or Crocheted Apparel",
+    "62": "Woven Apparel",
+    "64": "Footwear",
+    "70": "Glass and Glassware",
+    "72": "Iron and Steel",
+    "84": "Nuclear Reactors and Machinery",
+    "85": "Electrical Machinery",
+    "97": "Works of Art"
+  };
+  
+  return categoryMap[chapter] || `Chapter ${chapter}`;
+}
+
+function getChapterTitle(chapter: string): string {
+  return getCategoryFromChapter(chapter);
+}
+
+function getChapterDescription(chapter: string): string {
+  const descriptions: Record<string, string> = {
+    '39': 'Synthetic materials derived from petroleum, including containers, films, pipes, and manufactured goods. Important for packaging, automotive, and consumer industries.',
+    '42': 'Articles made from leather of any kind, including handbags, luggage, belts, and leather clothing. Excludes raw hides and skins.',
+    '61': 'Clothing and accessories made by knitting or crocheting, including sweaters, t-shirts, hosiery, and activewear.',
+    '84': 'Machinery and mechanical appliances including engines, pumps, machinery for specific industries, and mechanical handling equipment.',
+    // Add more as needed
+  };
+  
+  return descriptions[chapter] || `Products classified under Chapter ${chapter} of the Harmonized Tariff Schedule`;
+}
+
+function processOCRText(text: string, filename?: string): { entries: HSCodeEntry[], stats: ProcessingStats } {
+  console.log("Processing OCR text, length:", text.length, "filename:", filename);
   
   // Clean up OCR artifacts
   const cleanText = text
@@ -201,10 +391,11 @@ function processOCRText(text: string): HSCodeEntry[] {
     .replace(/\s+/g, ' ') // Normalize whitespace
     .replace(/\n\s*\n/g, '\n'); // Remove empty lines
   
-  const entries = extractHSCodes(cleanText);
-  console.log("Extracted entries:", entries.length);
+  const result = extractHSCodes(cleanText, filename);
+  console.log("Extracted entries:", result.entries.length);
+  console.log("Processing stats:", result.stats);
   
-  return entries;
+  return result;
 }
 
 serve(async (req) => {
@@ -214,15 +405,17 @@ serve(async (req) => {
   }
 
   try {
-    const { action, text } = await req.json();
+    const { action, text, filename } = await req.json();
     
     if (action === 'process-hts-text') {
-      const entries = processOCRText(text);
+      const result = processOCRText(text, filename);
       
       return new Response(JSON.stringify({ 
         success: true, 
-        entries,
-        count: entries.length 
+        entries: result.entries,
+        stats: result.stats,
+        count: result.entries.length,
+        message: `Successfully processed ${result.stats.documentType} (${result.stats.revision}) and extracted ${result.entries.length} HS code entries`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -236,6 +429,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in pdf-processor function:', error);
     return new Response(JSON.stringify({ 
+      success: false,
       error: error.message || 'Internal server error' 
     }), {
       status: 500,

@@ -122,7 +122,8 @@ export const PDFProcessor = () => {
       const { data: processResult, error } = await supabase.functions.invoke('pdf-processor', {
         body: { 
           action: 'process-hts-text',
-          text: extractedText 
+          text: extractedText,
+          filename: file.name
         }
       });
 
@@ -137,6 +138,11 @@ export const PDFProcessor = () => {
       const extractedEntries = processResult.entries as HSCodeEntry[];
       setEntries(extractedEntries);
       setProgress(75);
+      
+      // Display processing statistics
+      if (processResult.stats) {
+        toast.success(processResult.message || `Processed ${processResult.stats.documentType} - found ${extractedEntries.length} entries`);
+      }
 
       // Step 3: Store in database
       if (extractedEntries.length > 0) {
@@ -234,11 +240,27 @@ export const PDFProcessor = () => {
         </CardTitle>
         <CardDescription>
           Upload HTS revision PDFs to extract and import HS code data. 
-          Supports HTS change records and classification documents.
+          Supports HTS change records and classification documents from the official 2025 HTS Revision 19.
         </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">
+        {/* Enhanced Features Info */}
+        <Alert>
+          <BookOpen className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">Enhanced PDF Processing Features:</p>
+              <ul className="text-xs space-y-1">
+                <li>• <strong>2025 HTS Revision 19 Support:</strong> Optimized for latest official trade documents</li>
+                <li>• <strong>Chapter-Specific Intelligence:</strong> Detailed categorization and trade compliance notes</li>
+                <li>• <strong>Change Record Processing:</strong> Automatic detection of Add/Delete/Modify operations</li>
+                <li>• <strong>Enhanced Extraction:</strong> Tariff rates, special programs, and regulatory information</li>
+                <li>• <strong>Trade Intelligence:</strong> Common uses, compliance requirements, and related codes</li>
+              </ul>
+            </div>
+          </AlertDescription>
+        </Alert>
         {!stats && (
           <div className="space-y-4">
             <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
