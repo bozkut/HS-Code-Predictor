@@ -81,6 +81,19 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
         tariffRate: pred.officialEntry?.tariffInfo?.generalRate || pred.tariffInfo?.generalRate || "Contact Customs",
         isOfficiallyValidated: pred.isOfficiallyValidated || pred.isOfficialMatch || false,
         officialSource: pred.officialEntry?.officialSource || (pred.isOfficialMatch ? "USITC HTS 2025 Revision 19" : undefined),
+        sourceDocument: pred.isOfficialMatch || pred.isOfficiallyValidated ? {
+          name: "USITC Harmonized Tariff Schedule",
+          type: 'USITC_DATABASE' as const,
+          version: "2025 Revision 19",
+          chapter: pred.hsCode ? `Chapter ${pred.hsCode.substring(0, 2)}` : undefined,
+          url: "https://hts.usitc.gov/",
+          lastUpdated: new Date().toISOString().split('T')[0]
+        } : {
+          name: "Local HTS Database",
+          type: 'LOCAL_DATABASE' as const,
+          version: "Compiled Database",
+          chapter: pred.hsCode ? `Chapter ${pred.hsCode.substring(0, 2)}` : undefined
+        },
         tariffDetails: pred.officialEntry?.tariffInfo ? {
           general: pred.officialEntry.tariffInfo.generalRate,
           special: pred.officialEntry.tariffInfo.specialRate,
@@ -108,7 +121,13 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
             confidence: Math.min(95, match.confidence + 5), // Boost AI-analyzed confidence
             category: hsCode?.category || "AI Classified",
             categoryId: productData.categoryId,
-            tariffRate: hsCode?.tariffRate || "Contact Customs"
+            tariffRate: hsCode?.tariffRate || "Contact Customs",
+            sourceDocument: {
+              name: "AI Semantic Analysis (Gemini) + Local Database",
+              type: 'AI_SEMANTIC' as const,
+              version: "Gemini Pro Enhanced",
+              chapter: match.code ? `Chapter ${match.code.substring(0, 2)}` : undefined
+            }
           };
         });
         
@@ -125,7 +144,13 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
             confidence: Math.max(40, 75 - (index * 15)), // Lower confidence for non-AI matches
             category: hsCode.category,
             categoryId: productData.categoryId,
-            tariffRate: hsCode.tariffRate
+            tariffRate: hsCode.tariffRate,
+            sourceDocument: {
+              name: "Local HTS Database",
+              type: 'LOCAL_DATABASE' as const,
+              version: "Compiled Database",
+              chapter: hsCode.code ? `Chapter ${hsCode.code.substring(0, 2)}` : undefined
+            }
           });
         });
       } else {
@@ -146,7 +171,13 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
             confidence,
             category: hsCode.category,
             categoryId: productData.categoryId,
-            tariffRate: hsCode.tariffRate
+            tariffRate: hsCode.tariffRate,
+            sourceDocument: {
+              name: "Local HTS Database",
+              type: 'LOCAL_DATABASE' as const,
+              version: "Compiled Database",
+              chapter: hsCode.code ? `Chapter ${hsCode.code.substring(0, 2)}` : undefined
+            }
           };
         });
       }
@@ -178,7 +209,13 @@ const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] =>
       confidence: 60,
       category: "General Merchandise",
       categoryId: productData.categoryId,
-      tariffRate: "3.1%"
+      tariffRate: "3.1%",
+      sourceDocument: {
+        name: "Fallback HTS Classification",
+        type: 'LOCAL_DATABASE' as const,
+        version: "General Classification",
+        chapter: "Chapter 39"
+      }
     },
     {
       code: "4823.90.86", 
@@ -186,7 +223,13 @@ const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] =>
       confidence: 45,
       category: "Paper & Stationery",
       categoryId: productData.categoryId,
-      tariffRate: "Free"
+      tariffRate: "Free",
+      sourceDocument: {
+        name: "Fallback HTS Classification",
+        type: 'LOCAL_DATABASE' as const,
+        version: "General Classification",
+        chapter: "Chapter 48"
+      }
     }
   ];
 };

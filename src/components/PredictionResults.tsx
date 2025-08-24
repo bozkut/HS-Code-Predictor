@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, AlertCircle, Info, ExternalLink, Shield, Globe } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, ExternalLink, Shield, Globe, FileText, Database, Brain, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HSCodePrediction } from '@/types/product';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -30,6 +30,26 @@ const getConfidenceBadge = (confidence: number) => {
   if (confidence >= 80) return 'High Confidence';
   if (confidence >= 60) return 'Medium Confidence';
   return 'Low Confidence';
+};
+
+const getSourceIcon = (type: string) => {
+  switch (type) {
+    case 'PDF': return <FileText className="h-3 w-3" />;
+    case 'USITC_DATABASE': return <Globe className="h-3 w-3" />;
+    case 'LOCAL_DATABASE': return <Database className="h-3 w-3" />;
+    case 'AI_SEMANTIC': return <Brain className="h-3 w-3" />;
+    case 'HTS_CATALOG': return <BookOpen className="h-3 w-3" />;
+    default: return <Database className="h-3 w-3" />;
+  }
+};
+
+const getSourceBadgeColor = (type: string) => {
+  switch (type) {
+    case 'USITC_DATABASE': return 'bg-green-600 text-white';
+    case 'AI_SEMANTIC': return 'bg-blue-600 text-white';
+    case 'PDF': return 'bg-orange-600 text-white';
+    default: return 'bg-gray-600 text-white';
+  }
 };
 
 export const PredictionResults = ({ predictions, analysisDetails }: PredictionResultsProps) => {
@@ -163,6 +183,41 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                   </div>
                 )}
 
+                {/* Source Document Information */}
+                {prediction.sourceDocument && (
+                  <div className="bg-muted/30 rounded-md p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                      {getSourceIcon(prediction.sourceDocument.type)}
+                      <span>Source Document</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {prediction.sourceDocument.name}
+                        </span>
+                        <Badge className={`text-xs ${getSourceBadgeColor(prediction.sourceDocument.type)}`}>
+                          {prediction.sourceDocument.type.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      {prediction.sourceDocument.version && (
+                        <p className="text-xs text-muted-foreground">
+                          Version: {prediction.sourceDocument.version}
+                        </p>
+                      )}
+                      {prediction.sourceDocument.chapter && (
+                        <p className="text-xs text-muted-foreground">
+                          Reference: {prediction.sourceDocument.chapter}
+                        </p>
+                      )}
+                      {prediction.sourceDocument.lastUpdated && (
+                        <p className="text-xs text-muted-foreground">
+                          Last Updated: {prediction.sourceDocument.lastUpdated}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"
@@ -173,6 +228,17 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                     <ExternalLink className="h-3 w-3 mr-1" />
                     Verify HTS Database
                   </Button>
+                  {prediction.sourceDocument?.url && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => window.open(prediction.sourceDocument.url, '_blank')}
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      View Source
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

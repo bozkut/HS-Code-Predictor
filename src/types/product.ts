@@ -28,6 +28,21 @@ export interface HSCodePrediction {
   category: string;
   categoryId?: string;
   tariffRate?: string;
+  sourceDocument?: {
+    name: string;
+    type: 'PDF' | 'USITC_DATABASE' | 'LOCAL_DATABASE' | 'AI_SEMANTIC' | 'HTS_CATALOG';
+    version?: string;
+    chapter?: string;
+    url?: string;
+    lastUpdated?: string;
+  };
+  isOfficiallyValidated?: boolean;
+  officialSource?: string;
+  tariffDetails?: {
+    general: string;
+    special: string;
+    column2: string;
+  };
 }
 
 export interface AnalysisResults {
