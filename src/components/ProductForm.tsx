@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ProductData } from '@/types/product';
+import { ImageAnalysis } from './ImageAnalysis';
 
 interface ProductFormProps {
-  onAnalyze: (data: ProductData) => void;
+  onAnalyze: (data: ProductData & { imageUrl?: string }) => void;
   isAnalyzing: boolean;
 }
 
@@ -40,6 +41,7 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
   });
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   const handleImageUpload = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -89,6 +91,14 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
     }
   };
 
+  const handleImageAnalyzed = (url: string, analysis?: any) => {
+    setImageUrl(url);
+    toast({
+      title: "Image Ready",
+      description: "Image will be included in the analysis",
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -101,19 +111,20 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
       return;
     }
 
-    onAnalyze(formData);
+    onAnalyze({ ...formData, imageUrl });
   };
 
   return (
-    <Card className="shadow-card border-border/50">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-          <Upload className="h-5 w-5 text-primary" />
-          Product Information
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
+      <Card className="shadow-card border-border/50">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            Enhanced Product Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
           {/* Image Upload */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">Product Image</Label>
@@ -219,24 +230,33 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
             />
           </div>
 
-          <Button
-            type="submit"
-            variant="gradient"
-            size="lg"
-            className="w-full"
-            disabled={isAnalyzing}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Analyzing Product...
-              </>
-            ) : (
-              'Analyze & Predict HS Code'
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            <Button
+              type="submit"
+              variant="gradient"
+              size="lg"
+              className="w-full"
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Enhanced Analysis in Progress...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Enhanced HTS Prediction
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      
+      <ImageAnalysis 
+        onImageAnalyzed={handleImageAnalyzed}
+        isAnalyzing={isAnalyzing}
+      />
+    </div>
   );
 };

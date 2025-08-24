@@ -2,40 +2,80 @@ import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { ProductForm } from '@/components/ProductForm';
 import { PredictionResults } from '@/components/PredictionResults';
+import { EnhancedPredictionResults } from '@/components/EnhancedPredictionResults';
 import { CSVImport } from '@/components/CSVImport';
 import { PDFProcessor } from '@/components/PDFProcessor';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { analyzeProduct } from '@/utils/mockAnalysis';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { ProductData, AnalysisResults } from '@/types/product';
 import heroImage from '@/assets/hero-customs.jpg';
+
+interface EnhancedPredictionResult {
+  candidates: any[];
+  confidence_score: number;
+  needs_human_review: boolean;
+  review_reason?: string;
+  processing_time: number;
+  prediction_id: string;
+}
 
 const Index = () => {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [enhancedResults, setEnhancedResults] = useState<EnhancedPredictionResult | null>(null);
 
-  const handleAnalyze = async (productData: ProductData) => {
+  const handleAnalyze = async (productData: ProductData & { imageUrl?: string }) => {
     setIsAnalyzing(true);
     setResults(null);
+    setEnhancedResults(null);
     
     try {
-      const analysisResults = await analyzeProduct(productData);
-      setResults(analysisResults);
+      // Call the enhanced prediction API
+      const { data, error } = await supabase.functions.invoke('enhanced-prediction', {
+        body: {
+          productTitle: productData.title,
+          productDescription: productData.description,
+          category: productData.category,
+          materials: productData.materials,
+          imageUrl: productData.imageUrl
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setEnhancedResults(data);
       
       toast({
-        title: "Analysis Complete",
-        description: `Found ${analysisResults.predictions.length} potential HS code matches`,
+        title: "Enhanced Analysis Complete",
+        description: `Generated ${data.candidates?.length || 0} HTS code predictions with ${data.confidence_score}% confidence.`,
         duration: 4000,
       });
     } catch (error) {
-      console.error('Analysis error:', error);
-      toast({
-        title: "Analysis Failed",
-        description: "Please try again or contact support",
-        variant: "destructive",
-      });
+      console.error('Enhanced analysis error:', error);
+      
+      // Fallback to mock analysis
+      try {
+        const analysisResults = await analyzeProduct(productData);
+        setResults(analysisResults);
+        
+        toast({
+          title: "Fallback Analysis Complete",
+          description: "Using basic prediction system. Enhanced features temporarily unavailable.",
+          duration: 4000,
+        });
+      } catch (fallbackError) {
+        toast({
+          title: "Analysis Failed",
+          description: "Please try again or contact support",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -100,13 +140,27 @@ const Index = () => {
                             <span className="text-muted-foreground ml-1">Accurate codes minimize risk of fines</span>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                          <div>
-                            <span className="font-medium text-foreground">Speed Up Processing:</span>
-                            <span className="text-muted-foreground ml-1">AI analysis in seconds vs hours of manual research</span>
-                          </div>
-                        </div>
+                         <div className="flex items-start gap-3">
+                           <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                           <div>
+                             <span className="font-medium text-foreground">Speed Up Processing:</span>
+                             <span className="text-muted-foreground ml-1">Enhanced AI analysis in under 2 seconds vs hours of manual research</span>
+                           </div>
+                         </div>
+                         <div className="flex items-start gap-3">
+                           <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
+                           <div>
+                             <span className="font-medium text-foreground">Multi-modal Analysis:</span>
+                             <span className="text-muted-foreground ml-1">Combine text and image analysis for better accuracy</span>
+                           </div>
+                         </div>
+                         <div className="flex items-start gap-3">
+                           <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                           <div>
+                             <span className="font-medium text-foreground">Confidence Scoring:</span>
+                             <span className="text-muted-foreground ml-1">Know when predictions need human review</span>
+                           </div>
+                         </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -114,7 +168,17 @@ const Index = () => {
 
                 {/* Results */}
                 <div className="space-y-6">
-                  {results ? (
+                  {enhancedResults ? (
+                    <EnhancedPredictionResults 
+                      candidates={enhancedResults.candidates}
+                      confidence_score={enhancedResults.confidence_score}
+                      needs_human_review={enhancedResults.needs_human_review}
+                      review_reason={enhancedResults.review_reason}
+                      processing_time={enhancedResults.processing_time}
+                      prediction_id={enhancedResults.prediction_id}
+                      isAnalyzing={isAnalyzing}
+                    />
+                  ) : results ? (
                     <PredictionResults 
                       predictions={results.predictions}
                       analysisDetails={results.analysisDetails}
@@ -124,11 +188,11 @@ const Index = () => {
                       <CardContent className="pt-6">
                         <div className="text-center py-12">
                           <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <span className="text-2xl">🎯</span>
+                            <span className="text-2xl">🚀</span>
                           </div>
-                          <h3 className="text-lg font-semibold text-foreground mb-2">Ready to Analyze</h3>
+                          <h3 className="text-lg font-semibold text-foreground mb-2">Enhanced AI Analysis Ready</h3>
                           <p className="text-muted-foreground">
-                            Fill in your product information to get AI-powered HS code predictions with confidence scores.
+                            Fill in your product information to get AI-powered HS code predictions with confidence scores, multiple candidates, and image analysis support.
                           </p>
                         </div>
                       </CardContent>

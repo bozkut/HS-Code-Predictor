@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      hts_predictions: {
+        Row: {
+          category: string | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          image_url: string | null
+          materials: string | null
+          needs_human_review: boolean | null
+          predicted_codes: Json
+          processing_time_ms: number | null
+          product_description: string | null
+          product_title: string
+          review_reason: string | null
+          selected_code: string | null
+          updated_at: string
+          user_feedback: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          materials?: string | null
+          needs_human_review?: boolean | null
+          predicted_codes: Json
+          processing_time_ms?: number | null
+          product_description?: string | null
+          product_title: string
+          review_reason?: string | null
+          selected_code?: string | null
+          updated_at?: string
+          user_feedback?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          materials?: string | null
+          needs_human_review?: boolean | null
+          predicted_codes?: Json
+          processing_time_ms?: number | null
+          product_description?: string | null
+          product_title?: string
+          review_reason?: string | null
+          selected_code?: string | null
+          updated_at?: string
+          user_feedback?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       imported_products: {
         Row: {
           category_id: string
