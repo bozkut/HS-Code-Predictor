@@ -244,7 +244,10 @@ const Index = () => {
       {/* Footer */}
       <footer className="bg-card border-t border-border mt-16">
         <div className="container mx-auto px-6 py-8">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground space-y-2">
+            <p className="text-sm font-medium text-destructive bg-destructive/10 rounded-lg px-4 py-2 inline-block">
+              ⚠️ Araçların sorumluluğu tamamen kullanıcılara aittir
+            </p>
             <p className="text-sm">
               Powered by{" "}
               <a 
