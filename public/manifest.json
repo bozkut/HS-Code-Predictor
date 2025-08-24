@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "HS Code Predictor",
+  "version": "1.0.0",
+  "description": "AI-powered HS code prediction tool for international trade",
+  "icons": {
+    "16": "favicon.ico",
+    "32": "favicon.ico",
+    "48": "favicon.ico",
+    "128": "favicon.ico"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_title": "Open HS Code Predictor"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
