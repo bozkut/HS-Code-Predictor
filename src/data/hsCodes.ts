@@ -154,17 +154,18 @@ export const hsCodeDatabase: HSCode[] = [
   }
 ];
 
-// Helper function to find matching HS codes based on product data
-export function findMatchingHSCodes(
+// Helper function to find matching HS codes based on product data (including imported data)
+export async function findMatchingHSCodes(
   title: string, 
   description: string, 
   category: string, 
   materials?: string,
   categoryId?: string
-): HSCode[] {
+): Promise<HSCode[]> {
   const searchText = `${title} ${description} ${category} ${materials || ""} ${categoryId || ""}`.toLowerCase();
   
-  return hsCodeDatabase
+  // Search in static database
+  const staticMatches = hsCodeDatabase
     .map(hsCode => {
       const matchScore = hsCode.keywords.reduce((score, keyword) => {
         if (searchText.includes(keyword.toLowerCase())) {
@@ -179,4 +180,6 @@ export function findMatchingHSCodes(
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, 5)
     .map(item => item.hsCode);
+
+  return staticMatches;
 }

@@ -51,7 +51,7 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
   ];
 
   // Find matching HS codes from real database
-  const matchingHSCodes = findMatchingHSCodes(
+  const matchingHSCodes = await findMatchingHSCodes(
     productData.title,
     productData.description,
     productData.category,

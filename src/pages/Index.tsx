@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { ProductForm } from '@/components/ProductForm';
 import { PredictionResults } from '@/components/PredictionResults';
+import { CSVImport } from '@/components/CSVImport';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { analyzeProduct } from '@/utils/mockAnalysis';
 import { useToast } from '@/hooks/use-toast';
 import { ProductData, AnalysisResults } from '@/types/product';
@@ -65,66 +67,79 @@ const Index = () => {
       {/* Main Content */}
       <section className="py-12">
         <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-            {/* Product Form */}
-            <div className="space-y-6">
-              <ProductForm onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
-              
-              {/* Features Card */}
-              <Card className="shadow-card border-border/50">
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-foreground mb-4">Why Use AI HS Code Prediction?</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                      <div>
-                        <span className="font-medium text-foreground">Avoid Customs Delays:</span>
-                        <span className="text-muted-foreground ml-1">Correct classification prevents shipment holds</span>
+          <Tabs defaultValue="predict" className="w-full max-w-7xl mx-auto">
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+              <TabsTrigger value="predict">HS Code Prediction</TabsTrigger>
+              <TabsTrigger value="import">Data Import</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="predict" className="space-y-8">
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Product Form */}
+                <div className="space-y-6">
+                  <ProductForm onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+                  
+                  {/* Features Card */}
+                  <Card className="shadow-card border-border/50">
+                    <CardContent className="pt-6">
+                      <h3 className="font-semibold text-foreground mb-4">Why Use AI HS Code Prediction?</h3>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                          <div>
+                            <span className="font-medium text-foreground">Avoid Customs Delays:</span>
+                            <span className="text-muted-foreground ml-1">Correct classification prevents shipment holds</span>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
+                          <div>
+                            <span className="font-medium text-foreground">Reduce Penalties:</span>
+                            <span className="text-muted-foreground ml-1">Accurate codes minimize risk of fines</span>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                          <div>
+                            <span className="font-medium text-foreground">Speed Up Processing:</span>
+                            <span className="text-muted-foreground ml-1">AI analysis in seconds vs hours of manual research</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                      <div>
-                        <span className="font-medium text-foreground">Reduce Penalties:</span>
-                        <span className="text-muted-foreground ml-1">Accurate codes minimize risk of fines</span>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                      <div>
-                        <span className="font-medium text-foreground">Speed Up Processing:</span>
-                        <span className="text-muted-foreground ml-1">AI analysis in seconds vs hours of manual research</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-            {/* Results */}
-            <div className="space-y-6">
-              {results ? (
-                <PredictionResults 
-                  predictions={results.predictions}
-                  analysisDetails={results.analysisDetails}
-                />
-              ) : (
-                <Card className="shadow-card border-border/50">
-                  <CardContent className="pt-6">
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <span className="text-2xl">🎯</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">Ready to Analyze</h3>
-                      <p className="text-muted-foreground">
-                        Fill in your product information to get AI-powered HS code predictions with confidence scores.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
+                {/* Results */}
+                <div className="space-y-6">
+                  {results ? (
+                    <PredictionResults 
+                      predictions={results.predictions}
+                      analysisDetails={results.analysisDetails}
+                    />
+                  ) : (
+                    <Card className="shadow-card border-border/50">
+                      <CardContent className="pt-6">
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <span className="text-2xl">🎯</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-foreground mb-2">Ready to Analyze</h3>
+                          <p className="text-muted-foreground">
+                            Fill in your product information to get AI-powered HS code predictions with confidence scores.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="import">
+              <CSVImport />
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
 
