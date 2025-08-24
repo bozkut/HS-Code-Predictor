@@ -245,10 +245,6 @@ const Index = () => {
       <footer className="bg-card border-t border-border mt-16">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center text-muted-foreground space-y-3">
-            <p className="text-sm font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 inline-block max-w-2xl mx-auto">
-              <span className="block font-semibold mb-1">Important Disclaimer</span>
-              This tool provides HS code suggestions for informational purposes only. All classifications are recommendations and should be verified with customs authorities. Final responsibility for accurate classification rests with the user.
-            </p>
             <p className="text-sm">
               Powered by{" "}
               <a 
@@ -262,6 +258,10 @@ const Index = () => {
               </a>
               {" • Built for customs compliance • "}
               <span className="text-primary ml-1">Always verify critical classifications</span>
+            </p>
+            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 inline-block max-w-2xl mx-auto">
+              <span className="block font-bold mb-1">Important Disclaimer</span>
+              This tool provides HS code suggestions for informational purposes only. All classifications are recommendations and should be verified with customs authorities. Final responsibility for accurate classification rests with the user.
             </p>
           </div>
         </div>
