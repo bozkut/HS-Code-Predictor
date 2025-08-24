@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      imported_products: {
+        Row: {
+          category_id: string
+          category_path: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          materials: string | null
+          multiple_ids_category_id: string | null
+          multiple_ids_category_name: string | null
+          product_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          category_path?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          materials?: string | null
+          multiple_ids_category_id?: string | null
+          multiple_ids_category_name?: string | null
+          product_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          category_path?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          materials?: string | null
+          multiple_ids_category_id?: string | null
+          multiple_ids_category_name?: string | null
+          product_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
