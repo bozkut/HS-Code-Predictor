@@ -7,14 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface ProductData {
-  title: string;
-  description: string;
-  category: string;
-  materials: string;
-  image: File | null;
-}
+import { ProductData } from '@/types/product';
 
 interface ProductFormProps {
   onAnalyze: (data: ProductData) => void;

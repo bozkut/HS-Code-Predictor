@@ -1,20 +1,11 @@
-interface ProductData {
-  title: string;
-  description: string;
-  category: string;
-  materials: string;
-  image: File | null;
-}
+// Advanced utility for analyzing product data and generating HS code predictions
+// Uses real HS code database for accurate classification
 
-interface HSCodePrediction {
-  code: string;
-  description: string;
-  confidence: number;
-  category: string;
-  tariffRate?: string;
-}
+import { ProductData, HSCodePrediction } from "../types/product";
+import { findMatchingHSCodes } from "../data/hsCodes";
 
-// Mock analysis function to simulate AI prediction
+
+// Analyze product and return HS code predictions using real database
 export const analyzeProduct = async (productData: ProductData): Promise<{
   predictions: HSCodePrediction[];
   analysisDetails: {
@@ -23,132 +14,84 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
   };
 }> => {
   // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
+  const processingTime = Math.random() * 2000 + 1000; // 1-3 seconds
+  await new Promise(resolve => setTimeout(resolve, processingTime));
 
-  const factors = ['Product Title', 'Description Analysis', 'Category Classification'];
-  if (productData.materials) factors.push('Material Composition');
-  if (productData.image) factors.push('Image Recognition');
+  // Simulate factors considered in analysis
+  const factors = [
+    "Product Title Analysis",
+    "Description Keyword Matching", 
+    "Category Classification",
+    "HS Code Database Matching",
+    ...(productData.materials ? ["Material Composition Analysis"] : []),
+    ...(productData.image ? ["Image Recognition Analysis"] : [])
+  ];
 
-  // Mock predictions based on category
-  const predictions = generateMockPredictions(productData);
+  // Find matching HS codes from real database
+  const matchingHSCodes = findMatchingHSCodes(
+    productData.title,
+    productData.description,
+    productData.category,
+    productData.materials
+  );
+
+  // Convert to predictions with confidence scores
+  const predictions = matchingHSCodes.map((hsCode, index) => {
+    let confidence = 85 - (index * 10); // Start high, decrease for each match
+    
+    // Boost confidence based on available data
+    if (productData.materials) confidence += 8;
+    if (productData.image) confidence += 12;
+    if (productData.description.length > 100) confidence += 5;
+    
+    // Ensure confidence is within reasonable bounds
+    confidence = Math.min(95, Math.max(45, confidence));
+
+    return {
+      code: hsCode.code,
+      description: hsCode.description,
+      confidence,
+      category: hsCode.category,
+      tariffRate: hsCode.tariffRate
+    };
+  });
+
+  // If no matches found, provide fallback predictions
+  if (predictions.length === 0) {
+    return {
+      predictions: getFallbackPredictions(productData),
+      analysisDetails: {
+        processingTime: Math.round(processingTime),
+        factors
+      }
+    };
+  }
 
   return {
     predictions,
     analysisDetails: {
-      processingTime: Math.round(1500 + Math.random() * 2000),
+      processingTime: Math.round(processingTime),
       factors
     }
   };
 };
 
-const generateMockPredictions = (productData: ProductData): HSCodePrediction[] => {
-  const categoryMappings: Record<string, HSCodePrediction[]> = {
-    'Electronics': [
-      {
-        code: '8517.12.00',
-        description: 'Telephones for cellular networks or for other wireless networks',
-        confidence: 87,
-        category: 'Electrical machinery and equipment',
-        tariffRate: '0%'
-      },
-      {
-        code: '8471.30.01',
-        description: 'Portable automatic data processing machines, weighing not more than 10 kg',
-        confidence: 73,
-        category: 'Electrical machinery and equipment',
-        tariffRate: '0%'
-      },
-      {
-        code: '8528.72.64',
-        description: 'Other apparatus with a microprocessor-based device incorporating a modem',
-        confidence: 61,
-        category: 'Electrical machinery and equipment',
-        tariffRate: '0%'
-      }
-    ],
-    'Clothing & Textiles': [
-      {
-        code: '6109.10.00',
-        description: 'T-shirts, singlets and other vests, knitted or crocheted, of cotton',
-        confidence: 91,
-        category: 'Textiles and textile articles',
-        tariffRate: '16.5%'
-      },
-      {
-        code: '6203.42.40',
-        description: 'Men\'s or boys\' trousers, bib and brace overalls, breeches and shorts',
-        confidence: 78,
-        category: 'Textiles and textile articles',
-        tariffRate: '28.2%'
-      },
-      {
-        code: '6110.20.20',
-        description: 'Sweaters, pullovers, sweatshirts, waistcoats and similar articles',
-        confidence: 65,
-        category: 'Textiles and textile articles',
-        tariffRate: '32%'
-      }
-    ],
-    'Home & Garden': [
-      {
-        code: '9403.60.80',
-        description: 'Other wooden furniture',
-        confidence: 83,
-        category: 'Miscellaneous manufactured articles',
-        tariffRate: '0%'
-      },
-      {
-        code: '6302.60.00',
-        description: 'Toilet linen and kitchen linen, of terry towelling or similar terry fabrics',
-        confidence: 76,
-        category: 'Textiles and textile articles',
-        tariffRate: '9.1%'
-      },
-      {
-        code: '8516.79.00',
-        description: 'Other electro-thermic appliances',
-        confidence: 58,
-        category: 'Electrical machinery and equipment',
-        tariffRate: '2.1%'
-      }
-    ],
-    'Sports & Outdoor': [
-      {
-        code: '9506.62.80',
-        description: 'Other inflatable balls',
-        confidence: 89,
-        category: 'Miscellaneous manufactured articles',
-        tariffRate: '4.6%'
-      },
-      {
-        code: '6402.99.31',
-        description: 'Other footwear with outer soles and uppers of rubber or plastics',
-        confidence: 71,
-        category: 'Footwear, headgear, umbrellas',
-        tariffRate: '20%'
-      },
-      {
-        code: '9506.91.00',
-        description: 'Articles and equipment for general physical exercise, gymnastics or athletics',
-        confidence: 64,
-        category: 'Miscellaneous manufactured articles',
-        tariffRate: '4.6%'
-      }
-    ]
-  };
-
-  // Get predictions for the category, or use Electronics as default
-  const categoryPredictions = categoryMappings[productData.category] || categoryMappings['Electronics'];
-  
-  // Adjust confidence based on available data
-  const hasImage = productData.image !== null;
-  const hasMaterials = productData.materials.length > 0;
-  const hasDetailedDescription = productData.description.length > 50;
-  
-  const confidenceBoost = (hasImage ? 5 : 0) + (hasMaterials ? 8 : 0) + (hasDetailedDescription ? 3 : 0);
-  
-  return categoryPredictions.map(prediction => ({
-    ...prediction,
-    confidence: Math.min(95, prediction.confidence + confidenceBoost + Math.floor(Math.random() * 5 - 2))
-  })).sort((a, b) => b.confidence - a.confidence);
+// Fallback predictions when no specific matches are found
+const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] => {
+  return [
+    {
+      code: "3926.90.99",
+      description: "Other articles of plastics and articles of other materials",
+      confidence: 60,
+      category: "General Merchandise",
+      tariffRate: "3.1%"
+    },
+    {
+      code: "4823.90.86", 
+      description: "Other paper and paperboard, cut to size or shape",
+      confidence: 45,
+      category: "Paper & Stationery",
+      tariffRate: "Free"
+    }
+  ];
 };

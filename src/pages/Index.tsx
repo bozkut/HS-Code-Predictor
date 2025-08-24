@@ -5,31 +5,8 @@ import { PredictionResults } from '@/components/PredictionResults';
 import { Card, CardContent } from '@/components/ui/card';
 import { analyzeProduct } from '@/utils/mockAnalysis';
 import { useToast } from '@/hooks/use-toast';
+import { ProductData, AnalysisResults } from '@/types/product';
 import heroImage from '@/assets/hero-customs.jpg';
-
-interface ProductData {
-  title: string;
-  description: string;
-  category: string;
-  materials: string;
-  image: File | null;
-}
-
-interface HSCodePrediction {
-  code: string;
-  description: string;
-  confidence: number;
-  category: string;
-  tariffRate?: string;
-}
-
-interface AnalysisResults {
-  predictions: HSCodePrediction[];
-  analysisDetails: {
-    processingTime: number;
-    factors: string[];
-  };
-}
 
 const Index = () => {
   const { toast } = useToast();

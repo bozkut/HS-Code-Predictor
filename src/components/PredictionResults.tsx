@@ -3,14 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface HSCodePrediction {
-  code: string;
-  description: string;
-  confidence: number;
-  category: string;
-  tariffRate?: string;
-}
+import { HSCodePrediction } from '@/types/product';
 
 interface PredictionResultsProps {
   predictions: HSCodePrediction[];
