@@ -33,8 +33,8 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
     
     // Show success toast
     toast({
-      title: "Feedback gönderildi",
-      description: "Görüşünüz için teşekkür ederiz!",
+      title: "Feedback submitted",
+      description: "Thank you for your feedback!",
     });
 
     setSubmitted(true);
@@ -51,10 +51,10 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
               </div>
             </div>
             <p className="text-sm font-medium text-green-800">
-              Feedback gönderildi!
+              Feedback submitted!
             </p>
             <p className="text-xs text-green-600">
-              Görüşünüz sistemimizi geliştirmemize yardımcı oluyor.
+              Your feedback helps us improve our system.
             </p>
           </div>
         </CardContent>
@@ -67,7 +67,7 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-primary" />
-          Bu tahmin size yardımcı oldu mu?
+          Was this prediction helpful?
         </CardTitle>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="outline" className="font-mono text-xs">
@@ -86,7 +86,7 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
             className="flex-1"
           >
             <ThumbsUp className="h-4 w-4 mr-2" />
-            Evet, başarılı
+            Yes, accurate
           </Button>
           <Button
             variant={feedbackType === 'negative' ? 'destructive' : 'outline'}
@@ -95,7 +95,7 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
             className="flex-1"
           >
             <ThumbsDown className="h-4 w-4 mr-2" />
-            Hayır, doğru değil
+            No, incorrect
           </Button>
         </div>
 
@@ -103,10 +103,10 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
         {feedbackType && (
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">
-              Ek görüş (opsiyonel)
+              Additional comments (optional)
             </label>
             <Textarea
-              placeholder="Tahminle ilgili görüşlerinizi paylaşın..."
+              placeholder="Share your thoughts about this prediction..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               className="min-h-[60px] text-sm"
@@ -122,7 +122,7 @@ export const FeedbackForm = ({ predictionCode, predictionDescription }: Feedback
             className="w-full"
           >
             <Send className="h-3 w-3 mr-2" />
-            Feedback Gönder
+            Submit Feedback
           </Button>
         )}
       </CardContent>
