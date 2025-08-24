@@ -7,11 +7,13 @@ import { CSVImport } from '@/components/CSVImport';
 import { PDFProcessor } from '@/components/PDFProcessor';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { analyzeProduct } from '@/utils/mockAnalysis';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductData, AnalysisResults } from '@/types/product';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, LogOut } from 'lucide-react';
 import heroImage from '@/assets/hero-customs.jpg';
 
 interface EnhancedPredictionResult {
@@ -25,9 +27,18 @@ interface EnhancedPredictionResult {
 
 const Index = () => {
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
   const [enhancedResults, setEnhancedResults] = useState<EnhancedPredictionResult | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+  };
 
   const handleAnalyze = async (productData: ProductData & { imageUrl?: string }) => {
     setIsAnalyzing(true);
@@ -84,7 +95,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      <Header />
+      <div className="flex justify-between items-center p-4 border-b">
+        <Header />
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">
+            Welcome, {user?.email}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSignOut}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
+      </div>
       
       {/* Hero Section */}
       <section className="relative py-16 overflow-hidden">
