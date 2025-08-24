@@ -3,6 +3,7 @@ import { Header } from '@/components/Header';
 import { ProductForm } from '@/components/ProductForm';
 import { PredictionResults } from '@/components/PredictionResults';
 import { CSVImport } from '@/components/CSVImport';
+import { PDFProcessor } from '@/components/PDFProcessor';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { analyzeProduct } from '@/utils/mockAnalysis';
@@ -68,9 +69,10 @@ const Index = () => {
       <section className="py-12">
         <div className="container mx-auto px-6">
           <Tabs defaultValue="predict" className="w-full max-w-7xl mx-auto">
-            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+            <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
               <TabsTrigger value="predict">HS Code Prediction</TabsTrigger>
-              <TabsTrigger value="import">Data Import</TabsTrigger>
+              <TabsTrigger value="import">CSV Import</TabsTrigger>
+              <TabsTrigger value="pdf">PDF Import</TabsTrigger>
             </TabsList>
             
             <TabsContent value="predict" className="space-y-8">
@@ -138,6 +140,10 @@ const Index = () => {
             
             <TabsContent value="import">
               <CSVImport />
+            </TabsContent>
+            
+            <TabsContent value="pdf">
+              <PDFProcessor />
             </TabsContent>
           </Tabs>
         </div>
