@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Truck, Zap } from 'lucide-react';
 
 export const Header = () => {
@@ -19,10 +20,21 @@ export const Header = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="bg-white/20 text-primary-foreground border-white/30">
-              <Zap className="h-3 w-3 mr-1" />
-              De Minimis Ready
-            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Badge variant="secondary" className="bg-white/20 text-primary-foreground border-white/30">
+                    <Zap className="h-3 w-3 mr-1" />
+                    De Minimis Ready
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Ready for the US De Minimis regulation change. The exemption ended August 29th - all sellers must now correctly classify products with HS codes for customs duties, regardless of shipment value.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Badge variant="secondary" className="bg-white/20 text-primary-foreground border-white/30">
               16K+ Users
             </Badge>
