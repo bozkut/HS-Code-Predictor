@@ -55,7 +55,8 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
     productData.title,
     productData.description,
     productData.category,
-    productData.materials
+    productData.materials,
+    productData.categoryId
   );
 
   let predictions: HSCodePrediction[] = [];
@@ -74,6 +75,7 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
           description: hsCode?.description || match.reasoning,
           confidence: Math.min(98, match.confidence + 5), // Boost AI-analyzed confidence
           category: hsCode?.category || "AI Classified",
+          categoryId: productData.categoryId,
           tariffRate: hsCode?.tariffRate || "Contact Customs"
         };
       });
@@ -90,6 +92,7 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
           description: hsCode.description,
           confidence: Math.max(40, 75 - (index * 15)), // Lower confidence for non-AI matches
           category: hsCode.category,
+          categoryId: productData.categoryId,
           tariffRate: hsCode.tariffRate
         });
       });
@@ -110,6 +113,7 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
           description: hsCode.description,
           confidence,
           category: hsCode.category,
+          categoryId: productData.categoryId,
           tariffRate: hsCode.tariffRate
         };
       });
@@ -140,6 +144,7 @@ const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] =>
       description: "Other articles of plastics and articles of other materials",
       confidence: 60,
       category: "General Merchandise",
+      categoryId: productData.categoryId,
       tariffRate: "3.1%"
     },
     {
@@ -147,6 +152,7 @@ const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] =>
       description: "Other paper and paperboard, cut to size or shape",
       confidence: 45,
       category: "Paper & Stationery",
+      categoryId: productData.categoryId,
       tariffRate: "Free"
     }
   ];

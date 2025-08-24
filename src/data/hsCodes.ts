@@ -159,9 +159,10 @@ export function findMatchingHSCodes(
   title: string, 
   description: string, 
   category: string, 
-  materials?: string
+  materials?: string,
+  categoryId?: string
 ): HSCode[] {
-  const searchText = `${title} ${description} ${category} ${materials || ""}`.toLowerCase();
+  const searchText = `${title} ${description} ${category} ${materials || ""} ${categoryId || ""}`.toLowerCase();
   
   return hsCodeDatabase
     .map(hsCode => {
