@@ -87,21 +87,45 @@ export class BulkHTSLookupService {
 
       // Normalize the response from edge function
       const edgeData = data.status || data;
+      const results = edgeData.results || [];
+      
+      // Calculate summary statistics from results
+      const completedResults = results.filter((r: any) => r.status === 'COMPLETED');
+      const totalConfidence = completedResults.reduce((sum: number, r: any) => sum + (r.confidence || 0), 0);
+      const averageConfidence = completedResults.length > 0 ? Math.round(totalConfidence / completedResults.length) : 0;
+      
+      // Calculate chapter distribution
+      const chapterCounts: Record<string, number> = {};
+      completedResults.forEach((result: any) => {
+        if (result.predictions && result.predictions.length > 0) {
+          const chapter = result.predictions[0].code.substring(0, 2);
+          chapterCounts[chapter] = (chapterCounts[chapter] || 0) + 1;
+        }
+      });
+      
+      const mostCommonChapters = Object.entries(chapterCounts)
+        .map(([chapter, count]) => ({
+          chapter: `Chapter ${chapter}`,
+          count,
+          percentage: Math.round((count / completedResults.length) * 100)
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
       
       return {
         jobId: edgeData.jobId || jobId,
-        totalProducts: edgeData.totalProducts || 0,
-        completedProducts: edgeData.completedProducts || 0,
-        failedProducts: edgeData.failedProducts || 0,
+        totalProducts: edgeData.totalProducts || results.length,
+        completedProducts: edgeData.completedProducts || completedResults.length,
+        failedProducts: edgeData.failedProducts || results.filter((r: any) => r.status === 'FAILED').length,
         status: edgeData.status || 'COMPLETED',
         startTime: edgeData.startTime || new Date().toISOString(),
         endTime: edgeData.endTime,
-        results: edgeData.results || [],
+        results: results,
         summary: {
-          averageConfidence: edgeData.summary?.averageConfidence || edgeData.averageConfidence || 0,
-          mostCommonChapters: edgeData.summary?.mostCommonChapters || [],
-          flaggedForReview: edgeData.summary?.flaggedForReview || 0,
-          totalProcessingTime: edgeData.summary?.totalProcessingTime || 0
+          averageConfidence,
+          mostCommonChapters,
+          flaggedForReview: results.filter((r: any) => r.confidence < 70).length,
+          totalProcessingTime: edgeData.summary?.totalProcessingTime || 2000
         }
       };
     } catch (error) {
