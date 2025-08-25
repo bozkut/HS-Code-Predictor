@@ -123,23 +123,25 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          jobId,
-          status: 'COMPLETED',
-          totalProducts: 5,
-          completedProducts: 5,
-          failedProducts: 0,
-          results: sampleResults,
-          summary: {
-            averageConfidence: sampleResults.reduce((sum, r) => sum + r.confidence, 0) / sampleResults.length,
-            mostCommonChapters: [
-              { chapter: 'Chapter 85', count: 1, percentage: 20 },
-              { chapter: 'Chapter 62', count: 1, percentage: 20 },
-              { chapter: 'Chapter 39', count: 1, percentage: 20 },
-              { chapter: 'Chapter 82', count: 1, percentage: 20 },
-              { chapter: 'Chapter 99', count: 1, percentage: 20 }
-            ],
-            flaggedForReview: sampleResults.filter(r => r.confidence < 70).length,
-            totalProcessingTime: 2000
+          status: {
+            jobId,
+            status: 'COMPLETED',
+            totalProducts: 5,
+            completedProducts: 5,
+            failedProducts: 0,
+            results: sampleResults,
+            summary: {
+              averageConfidence: Math.round(sampleResults.reduce((sum, r) => sum + r.confidence, 0) / sampleResults.length),
+              mostCommonChapters: [
+                { chapter: 'Chapter 85', count: 1, percentage: 20 },
+                { chapter: 'Chapter 62', count: 1, percentage: 20 },
+                { chapter: 'Chapter 39', count: 1, percentage: 20 },
+                { chapter: 'Chapter 82', count: 1, percentage: 20 },
+                { chapter: 'Chapter 99', count: 1, percentage: 20 }
+              ],
+              flaggedForReview: sampleResults.filter(r => r.confidence < 70).length,
+              totalProcessingTime: 2000
+            }
           }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
