@@ -1,1 +1,37 @@
 project_id = "kcnblkynxnnlorjbrrcx"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://lovable.dev"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+security_update_password_requires_reauthentication = true
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[functions.enhanced-prediction]
+verify_jwt = true
+
+[functions.bulk-hts-analysis]
+verify_jwt = true
+
+[functions.semantic-analysis]
+verify_jwt = true
+
+[functions.hts-lookup]
+verify_jwt = true
+
+[functions.feedback]
+verify_jwt = true
