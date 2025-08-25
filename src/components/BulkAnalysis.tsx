@@ -127,6 +127,8 @@ export const BulkAnalysis = () => {
     const pollInterval = setInterval(async () => {
       try {
         const status = await BulkHTSLookupService.getJobStatus(jobId);
+        console.log('Job Status Debug:', JSON.stringify(status, null, 2));
+        console.log('Results Debug:', status.results);
         setJobStatus(status);
         
         if (status.status === 'COMPLETED' || status.status === 'FAILED') {
