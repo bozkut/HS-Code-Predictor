@@ -5,6 +5,9 @@ import { PredictionResults } from '@/components/PredictionResults';
 import { EnhancedPredictionResults } from '@/components/EnhancedPredictionResults';
 import { CSVImport } from '@/components/CSVImport';
 import { PDFProcessor } from '@/components/PDFProcessor';
+import { TariffCalculator } from '@/components/TariffCalculator';
+import { HTSChangeTracker } from '@/components/HTSChangeTracker';
+import { BulkAnalysis } from '@/components/BulkAnalysis';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -137,8 +140,11 @@ const Index = () => {
       <section className="py-12">
         <div className="container mx-auto px-6">
           <Tabs defaultValue="predict" className="w-full max-w-7xl mx-auto">
-            <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
-              <TabsTrigger value="predict">HS Code Prediction</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6 max-w-4xl mx-auto mb-8">
+              <TabsTrigger value="predict">HS Prediction</TabsTrigger>
+              <TabsTrigger value="tariff">Tariff Calculator</TabsTrigger>
+              <TabsTrigger value="tracker">Change Tracker</TabsTrigger>
+              <TabsTrigger value="bulk">Bulk Analysis</TabsTrigger>
               <TabsTrigger value="import">CSV Import</TabsTrigger>
               <TabsTrigger value="pdf">PDF Import</TabsTrigger>
             </TabsList>
@@ -228,6 +234,18 @@ const Index = () => {
                   )}
                 </div>
               </div>
+            </TabsContent>
+            
+            <TabsContent value="tariff">
+              <TariffCalculator />
+            </TabsContent>
+            
+            <TabsContent value="tracker">
+              <HTSChangeTracker />
+            </TabsContent>
+            
+            <TabsContent value="bulk">
+              <BulkAnalysis />
             </TabsContent>
             
             <TabsContent value="import">
