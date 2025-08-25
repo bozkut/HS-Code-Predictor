@@ -291,7 +291,7 @@ export const BulkAnalysis = () => {
                     <div className="text-sm text-muted-foreground">Failed</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">{jobStatus.summary.flaggedForReview}</div>
+                    <div className="text-2xl font-bold">{jobStatus.summary?.flaggedForReview || 0}</div>
                     <div className="text-sm text-muted-foreground">Need Review</div>
                   </div>
                 </div>
@@ -319,11 +319,11 @@ export const BulkAnalysis = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Average Confidence:</span>
-                      <span className="font-medium">{jobStatus.summary.averageConfidence}%</span>
+                      <span className="font-medium">{jobStatus.summary?.averageConfidence || 0}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Processing Time:</span>
-                      <span className="font-medium">{Math.round(jobStatus.summary.totalProcessingTime / 1000)}s</span>
+                      <span className="font-medium">{Math.round((jobStatus.summary?.totalProcessingTime || 0) / 1000)}s</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Success Rate:</span>
@@ -341,7 +341,7 @@ export const BulkAnalysis = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {jobStatus.summary.mostCommonChapters.map((chapter, index) => (
+                    {(jobStatus.summary?.mostCommonChapters || []).map((chapter, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <span className="text-sm">{chapter.chapter}</span>
                         <div className="flex items-center gap-2">
