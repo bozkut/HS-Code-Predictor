@@ -35,7 +35,24 @@ serve(async (req) => {
   try {
     const { action, products, jobId } = await req.json();
     
-    console.log(`Bulk HTS analysis request: ${action}`);
+    console.log(`Bulk HTS analysis request: ${action} with ${products?.length || 0} products`);
+
+    // Memory optimization: Limit batch size
+    const MAX_BATCH_SIZE = 25;
+    if (action === 'start-job' && products && products.length > MAX_BATCH_SIZE) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Batch size too large. Maximum ${MAX_BATCH_SIZE} products allowed per batch.`,
+          maxBatchSize: MAX_BATCH_SIZE,
+          receivedSize: products.length
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
 
     let result;
     
