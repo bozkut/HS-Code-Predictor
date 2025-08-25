@@ -303,10 +303,11 @@ export const BulkAnalysis = () => {
 
       {jobStatus?.status === 'COMPLETED' && (
         <Tabs defaultValue="summary" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-            <TabsTrigger value="results">Results</TabsTrigger>
-            <TabsTrigger value="export">Export</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="summary">Analytics</TabsTrigger>
+            <TabsTrigger value="risk">Risk Assessment</TabsTrigger>
+            <TabsTrigger value="results">Product Results</TabsTrigger>
+            <TabsTrigger value="export">Export Report</TabsTrigger>
           </TabsList>
 
           <TabsContent value="summary" className="space-y-4">
@@ -367,6 +368,105 @@ export const BulkAnalysis = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="risk" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-amber-600">⚠️ High Risk Products</CardTitle>
+                  <CardDescription>Products requiring immediate attention</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {(jobStatus.results || [])
+                      .filter(r => r.confidence < 70)
+                      .slice(0, 5)
+                      .map((result, index) => (
+                        <div key={index} className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <div className="font-medium text-sm">{result.product.title}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Confidence: {result.confidence}% - Needs manual review
+                          </div>
+                        </div>
+                      ))}
+                    {(jobStatus.results || []).filter(r => r.confidence < 70).length === 0 && (
+                      <div className="text-center text-sm text-muted-foreground py-4">
+                        🎉 No high risk products found!
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-green-600">✅ Ready for Customs</CardTitle>
+                  <CardDescription>High confidence predictions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {(jobStatus.results || [])
+                      .filter(r => r.confidence >= 85)
+                      .slice(0, 5)
+                      .map((result, index) => (
+                        <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="font-medium text-sm">{result.product.title}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {result.predictions?.[0]?.code} - {result.confidence}% confidence
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>🚨 Compliance Risk Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">
+                      {(jobStatus.results || []).filter(r => r.confidence < 50).length}
+                    </div>
+                    <div className="text-sm text-red-600">Critical Risk</div>
+                    <div className="text-xs text-muted-foreground">(&lt;50% confidence)</div>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-lg">
+                    <div className="text-2xl font-bold text-amber-600">
+                      {(jobStatus.results || []).filter(r => r.confidence >= 50 && r.confidence < 70).length}
+                    </div>
+                    <div className="text-sm text-amber-600">Medium Risk</div>
+                    <div className="text-xs text-muted-foreground">(50-70% confidence)</div>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(jobStatus.results || []).filter(r => r.confidence >= 70 && r.confidence < 85).length}
+                    </div>
+                    <div className="text-sm text-blue-600">Low Risk</div>
+                    <div className="text-xs text-muted-foreground">(70-85% confidence)</div>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {(jobStatus.results || []).filter(r => r.confidence >= 85).length}
+                    </div>
+                    <div className="text-sm text-green-600">Very Low Risk</div>
+                    <div className="text-xs text-muted-foreground">(&gt;85% confidence)</div>
+                  </div>
+                </div>
+                
+                <Alert className="mt-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Recommendation:</strong> Focus on {(jobStatus.results || []).filter(r => r.confidence < 70).length} products requiring manual review. 
+                    {(jobStatus.results || []).filter(r => r.confidence >= 85).length} products are ready for customs clearance.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="results" className="space-y-4">
