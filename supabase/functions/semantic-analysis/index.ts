@@ -1,7 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +18,43 @@ serve(async (req) => {
   }
 
   try {
+    // Extract and verify JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Missing or invalid authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify JWT and extract user_id
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { productTitle, productDescription, availableHSCodes } = await req.json();
+    
+    // Input validation
+    if (!productTitle || typeof productTitle !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid request: productTitle is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (productTitle.length > 500) {
+      return new Response(JSON.stringify({ error: 'Invalid request: productTitle too long' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const prompt = `Analyze this product and determine the best HS code match:
 

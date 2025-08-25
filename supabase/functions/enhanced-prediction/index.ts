@@ -50,7 +50,43 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
+    // Extract and verify JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Missing or invalid authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify JWT and extract user_id
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const requestData: PredictionRequest = await req.json();
+    
+    // Validate input
+    if (!requestData.productTitle || typeof requestData.productTitle !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid request: productTitle is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (requestData.productTitle.length > 500) {
+      return new Response(JSON.stringify({ error: 'Invalid request: productTitle too long (max 500 characters)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     console.log('Enhanced prediction request:', requestData);
 
     // Step 1: Get initial HTS search results
@@ -78,10 +114,11 @@ serve(async (req) => {
 
     const processing_time = Date.now() - startTime;
 
-    // Step 6: Store prediction in database for feedback tracking
+    // Step 6: Store prediction in database for feedback tracking with user association
     const { data: predictionRecord } = await supabase
       .from('hts_predictions')
       .insert({
+        user_id: user.id, // Associate with authenticated user
         product_title: requestData.productTitle,
         product_description: requestData.productDescription,
         category: requestData.category,

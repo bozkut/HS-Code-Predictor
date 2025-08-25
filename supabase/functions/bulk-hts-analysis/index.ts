@@ -1,9 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
 interface BulkProduct {
   id: string;
@@ -20,7 +25,45 @@ serve(async (req) => {
   }
 
   try {
+    // Extract and verify JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Unauthorized: Missing or invalid authorization header' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify JWT and extract user_id
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Unauthorized: Invalid token' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { action, products, jobId } = await req.json();
+    
+    // Input validation
+    if (!action || typeof action !== 'string') {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid request: action is required'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     console.log(`Action: ${action}, Products: ${products?.length || 0}`);
 
     // Strict limits for memory management
