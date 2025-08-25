@@ -60,8 +60,13 @@ export class BulkHTSLookupService {
         throw new Error('Failed to start bulk analysis job');
       }
 
+      // Handle edge function error responses
+      if (data && !data.success && data.error) {
+        throw new Error(data.error);
+      }
+
       // Edge function returns data directly or with jobId
-      return data.jobId || data.jobId || 'mock-job-' + Date.now();
+      return data.jobId || 'mock-job-' + Date.now();
     } catch (error) {
       console.error('Failed to start bulk analysis:', error);
       throw error;
@@ -80,11 +85,16 @@ export class BulkHTSLookupService {
         }
       });
 
-      console.log('EDGE FUNCTION RAW RESPONSE:', data);
+      console.log('EDGE FUNCTION RAW RESPONSE:', JSON.stringify(data, null, 2));
 
       if (error) {
         console.error('Error getting job status:', error);
         throw new Error('Failed to get job status');
+      }
+
+      // Handle edge function error responses
+      if (data && !data.success && data.error) {
+        throw new Error(data.error);
       }
 
       // Normalize the response from edge function
