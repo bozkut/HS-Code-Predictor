@@ -80,6 +80,8 @@ export class BulkHTSLookupService {
         }
       });
 
+      console.log('EDGE FUNCTION RAW RESPONSE:', data);
+
       if (error) {
         console.error('Error getting job status:', error);
         throw new Error('Failed to get job status');
