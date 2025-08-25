@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Welcome to Predict HS Codes with AI Precision
 
 ## Project info
 
@@ -8,7 +8,6 @@
 
 There are several ways of editing your application.
 
-**Use Lovable**
 
 Simply visit the [Lovable Project](https://lovable.dev/projects/2154cf3d-88d6-4b9b-95a3-7297f7b052c1) and start prompting.
 
