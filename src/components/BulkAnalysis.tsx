@@ -373,7 +373,7 @@ export const BulkAnalysis = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {jobStatus.results.slice(0, 50).map((result) => ( // Show first 50 results
+                  {(jobStatus.results || []).slice(0, 50).map((result) => ( // Show first 50 results
                     <div key={result.productId} className="p-3 border rounded-lg">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1 flex-1">
@@ -381,7 +381,7 @@ export const BulkAnalysis = () => {
                           <div className="text-sm text-muted-foreground line-clamp-2">
                             {result.product.description}
                           </div>
-                          {result.predictions.length > 0 && (
+                          {result.predictions && result.predictions.length > 0 && (
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">{result.predictions[0].code}</Badge>
                               <span className="text-sm">{result.confidence}% confidence</span>
@@ -397,7 +397,7 @@ export const BulkAnalysis = () => {
                     </div>
                   ))}
                   
-                  {jobStatus.results.length > 50 && (
+                  {(jobStatus.results || []).length > 50 && (
                     <div className="text-center text-sm text-muted-foreground py-4">
                       Showing first 50 results. Export to CSV to see all results.
                     </div>
