@@ -1,0 +1,10 @@
+{
+  "name": "hs-code-predictor-extension",
+  "version": "1.0.0",
+  "description": "AI-powered HS code prediction Chrome extension for international trade",
+  "scripts": {
+    "build:extension": "vite build --config vite.config.extension.ts",
+    "dev:extension": "vite build --config vite.config.extension.ts --watch"
+  },
+  "type": "module"
+}

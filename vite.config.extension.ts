@@ -14,15 +14,15 @@ export default defineConfig({
     rollupOptions: {
       input: {
         sidepanel: path.resolve(__dirname, "public/sidepanel.html"),
-        background: path.resolve(__dirname, "public/background.js"),
       },
       output: {
-        entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'background' ? 'background.js' : '[name]-[hash].js';
-        },
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name].[ext]'
       },
     },
     copyPublicDir: true,
+    minify: false,
   },
   define: {
     global: "globalThis",
