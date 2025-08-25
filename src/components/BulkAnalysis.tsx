@@ -322,14 +322,20 @@ export const BulkAnalysis = () => {
                       <span className="font-medium">{jobStatus.summary?.averageConfidence || 0}%</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Processing Time:</span>
-                      <span className="font-medium">{Math.round((jobStatus.summary?.totalProcessingTime || 0) / 1000)}s</span>
+                      <span>High Confidence (&gt;85%):</span>
+                      <span className="font-medium">
+                        {jobStatus.results ? jobStatus.results.filter(r => r.confidence > 85).length : 0} / {jobStatus.totalProducts}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Success Rate:</span>
-                      <span className="font-medium">
-                        {Math.round((jobStatus.completedProducts / jobStatus.totalProducts) * 100)}%
+                      <span>Manual Review Needed:</span>
+                      <span className="font-medium text-amber-600">
+                        {jobStatus.results ? jobStatus.results.filter(r => r.confidence < 70).length : 0} products
                       </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Processing Time:</span>
+                      <span className="font-medium">{Math.round((jobStatus.summary?.totalProcessingTime || 0) / 1000)}s</span>
                     </div>
                   </div>
                 </CardContent>
