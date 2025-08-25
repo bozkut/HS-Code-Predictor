@@ -10,11 +10,21 @@ import { HTSLookupService } from "../services/HTSLookupService";
 // Enhanced semantic analysis using Gemini AI
 const performSemanticAnalysis = async (productData: ProductData, matchingHSCodes: any[]) => {
   try {
+    // Get the current session to pass auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('Authentication required for semantic analysis');
+      return null;
+    }
+
     const { data, error } = await supabase.functions.invoke('semantic-analysis', {
       body: {
         productTitle: productData.title,
         productDescription: productData.description,
         availableHSCodes: matchingHSCodes.slice(0, 10) // Send top 10 matches for AI analysis
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
       }
     });
 

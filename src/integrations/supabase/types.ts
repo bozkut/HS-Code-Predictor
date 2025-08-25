@@ -31,7 +31,7 @@ export type Database = {
           selected_code: string | null
           updated_at: string
           user_feedback: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           category?: string | null
@@ -49,7 +49,7 @@ export type Database = {
           selected_code?: string | null
           updated_at?: string
           user_feedback?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           category?: string | null
@@ -67,7 +67,7 @@ export type Database = {
           selected_code?: string | null
           updated_at?: string
           user_feedback?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -85,6 +85,7 @@ export type Database = {
           product_id: string
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           category_id: string
@@ -99,6 +100,7 @@ export type Database = {
           product_id: string
           title: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           category_id?: string
@@ -113,6 +115,7 @@ export type Database = {
           product_id?: string
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

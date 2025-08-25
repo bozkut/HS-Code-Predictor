@@ -39,10 +39,19 @@ export class HTSLookupService {
    */
   static async searchByDescription(description: string): Promise<HTSEntry[]> {
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required for HTS lookup');
+      }
+
       const { data, error } = await supabase.functions.invoke('hts-lookup', {
         body: {
           action: 'search',
           query: description
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
@@ -67,10 +76,19 @@ export class HTSLookupService {
    */
   static async validateHTSCode(hsCode: string): Promise<HTSValidationResult> {
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required for HTS validation');
+      }
+
       const { data, error } = await supabase.functions.invoke('hts-lookup', {
         body: {
           action: 'validate',
           hsCode
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 

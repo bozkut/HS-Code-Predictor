@@ -48,10 +48,19 @@ export class BulkHTSLookupService {
    */
   static async startBulkAnalysis(products: BulkProduct[]): Promise<string> {
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required for bulk analysis');
+      }
+
       const { data, error } = await supabase.functions.invoke('bulk-hts-analysis', {
         body: {
           action: 'start-job',
           products
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
@@ -78,10 +87,19 @@ export class BulkHTSLookupService {
    */
   static async getJobStatus(jobId: string): Promise<BulkJobStatus> {
     try {
+      // Get the current session to pass auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required for job status');
+      }
+
       const { data, error } = await supabase.functions.invoke('bulk-hts-analysis', {
         body: {
           action: 'get-status',
           jobId
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
