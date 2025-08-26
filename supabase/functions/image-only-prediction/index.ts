@@ -6,11 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+const grokApiKey = Deno.env.get('GROK_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
-if (!geminiApiKey || !supabaseUrl || !supabaseAnonKey) {
+if (!grokApiKey || !supabaseUrl || !supabaseAnonKey) {
   console.error('Missing required environment variables');
 }
 
@@ -160,38 +160,44 @@ Respond ONLY with valid JSON in this exact format:
   "suggested_hts_chapters": ["chapter_number_1", "chapter_number_2"]
 }`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${grokApiKey}`
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { 
-              inline_data: {
-                mime_type: "image/jpeg",
-                data: base64Data
+        model: 'grok-vision-beta',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Data}`
+                }
               }
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topK: 20,
-          topP: 0.8,
-          maxOutputTokens: 2048,
-        }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 2048
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
+      console.error('Grok API error:', errorText);
       return null;
     }
 
     const data = await response.json();
-    const analysisText = data.candidates[0].content.parts[0].text;
+    const analysisText = data.choices[0].message.content;
     
     try {
       // Extract JSON from response
