@@ -43,16 +43,14 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!);
     
-    // Get auth user
+    // Get auth user (optional for image-only analysis)
+    let userId = null;
     const authHeader = req.headers.get('authorization');
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error } = await supabaseClient.auth.getUser(token);
-      if (error || !user) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (!error && user) {
+        userId = user.id;
       }
     }
 
@@ -86,7 +84,7 @@ serve(async (req) => {
     const { error: dbError } = await supabaseClient
       .from('hts_predictions')
       .insert({
-        user_id: authHeader ? (await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''))).data.user?.id : null,
+        user_id: userId,
         product_title: imageAnalysis.product_type || 'Image-based classification',
         product_description: `Material: ${imageAnalysis.materials?.join(', ') || 'Unknown'}. Features: ${imageAnalysis.features?.join(', ') || 'None identified'}.`,
         predicted_hts_code: predictions[0]?.code || '',

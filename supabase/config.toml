@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.feedback]
 verify_jwt = true
+
+[functions.image-only-prediction]
+verify_jwt = false
