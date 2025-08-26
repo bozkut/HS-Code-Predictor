@@ -328,30 +328,37 @@ export async function findMatchingHSCodes(
   categoryId?: string
 ): Promise<HSCode[]> {
   const searchText = `${title} ${description} ${category} ${materials || ""} ${categoryId || ""}`.toLowerCase();
+  console.log("Searching for matches in text:", searchText.substring(0, 200) + "...");
   
   // Enhanced matching with weighted scoring
   const matches = hsCodeDatabase
     .map(hsCode => {
       let matchScore = 0;
       let keywordMatches = 0;
+      let matchedKeywords: string[] = [];
       
       // Check each keyword for matches
       hsCode.keywords.forEach(keyword => {
         const keywordLower = keyword.toLowerCase();
         if (searchText.includes(keywordLower)) {
           keywordMatches++;
+          matchedKeywords.push(keyword);
           // Exact word matches get higher score
           const exactMatch = new RegExp(`\\b${keywordLower}\\b`).test(searchText);
           matchScore += exactMatch ? 3 : 1;
         }
       });
       
-      // Bonus scoring for material matches
+      // Bonus scoring for material matches (very important for HTS classification)
       if (materials) {
         const materialLower = materials.toLowerCase();
         hsCode.keywords.forEach(keyword => {
-          if (materialLower.includes(keyword.toLowerCase())) {
-            matchScore += 2; // Materials are very important for classification
+          const keywordLower = keyword.toLowerCase();
+          if (materialLower.includes(keywordLower) || keywordLower.includes(materialLower)) {
+            matchScore += 3; // Higher bonus for materials
+            if (!matchedKeywords.includes(keyword)) {
+              matchedKeywords.push(keyword);
+            }
           }
         });
       }
@@ -359,17 +366,31 @@ export async function findMatchingHSCodes(
       // Bonus for title matches (most important)
       const titleLower = title.toLowerCase();
       hsCode.keywords.forEach(keyword => {
-        if (titleLower.includes(keyword.toLowerCase())) {
+        const keywordLower = keyword.toLowerCase();
+        if (titleLower.includes(keywordLower) || keywordLower.includes(titleLower)) {
           matchScore += 2;
         }
       });
       
       // Category relevance bonus
-      if (category && hsCode.category.toLowerCase().includes(category.toLowerCase().split(' ')[0])) {
-        matchScore += 1;
+      if (category) {
+        const categoryWords = category.toLowerCase().split(/[\s&]+/);
+        const hsCodeCategoryWords = hsCode.category.toLowerCase().split(/[\s&]+/);
+        
+        categoryWords.forEach(catWord => {
+          hsCodeCategoryWords.forEach(hsCodeWord => {
+            if (catWord.includes(hsCodeWord) || hsCodeWord.includes(catWord)) {
+              matchScore += 1;
+            }
+          });
+        });
       }
       
-      return { hsCode, matchScore, keywordMatches };
+      if (matchScore > 0) {
+        console.log(`Match found for ${hsCode.code}: score=${matchScore}, keywords=${matchedKeywords.join(", ")}`);
+      }
+      
+      return { hsCode, matchScore, keywordMatches, matchedKeywords };
     })
     .filter(item => item.matchScore > 0)
     .sort((a, b) => {
@@ -382,5 +403,6 @@ export async function findMatchingHSCodes(
     .slice(0, 8) // Return top 8 matches for better variety
     .map(item => item.hsCode);
 
+  console.log("Final matches returned:", matches.map(m => m.code));
   return matches;
 }

@@ -63,6 +63,13 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
   ];
 
   // Step 1: Find matching HS codes from our local database
+  console.log("Product data for analysis:", {
+    title: productData.title,
+    materials: productData.materials,
+    category: productData.category,
+    description: productData.description?.substring(0, 100) + "..."
+  });
+  
   const matchingHSCodes = await findMatchingHSCodes(
     productData.title,
     productData.description,
@@ -70,6 +77,8 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
     productData.materials,
     productData.categoryId
   );
+  
+  console.log("Found matching HS codes:", matchingHSCodes.length, matchingHSCodes.map(c => ({ code: c.code, category: c.category })));
 
   let predictions: HSCodePrediction[] = [];
 

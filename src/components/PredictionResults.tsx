@@ -147,16 +147,16 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                 
                 <div className="text-right space-y-2">
                   <div className="flex items-center gap-2">
-                    {getConfidenceIcon(Math.round(prediction.confidence * 100))}
-                    <span className={`font-semibold ${getConfidenceColor(Math.round(prediction.confidence * 100))}`}>
-                      {Math.round(prediction.confidence * 100)}%
+                    {getConfidenceIcon(Math.round(prediction.confidence))}
+                    <span className={`font-semibold ${getConfidenceColor(Math.round(prediction.confidence))}`}>
+                      {Math.round(prediction.confidence)}%
                     </span>
                   </div>
                   <Badge 
-                    variant={Math.round(prediction.confidence * 100) >= 80 ? "default" : Math.round(prediction.confidence * 100) >= 60 ? "secondary" : "outline"}
+                    variant={Math.round(prediction.confidence) >= 80 ? "default" : Math.round(prediction.confidence) >= 60 ? "secondary" : "outline"}
                     className="text-xs"
                   >
-                    {getConfidenceBadge(Math.round(prediction.confidence * 100))}
+                    {getConfidenceBadge(Math.round(prediction.confidence))}
                   </Badge>
                 </div>
               </div>
@@ -169,10 +169,10 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Confidence Level</span>
-                    <span>{Math.round(prediction.confidence * 100)}%</span>
+                    <span>{Math.round(prediction.confidence)}%</span>
                   </div>
                   <Progress 
-                    value={Math.round(prediction.confidence * 100)} 
+                    value={Math.round(prediction.confidence)} 
                     className="h-2"
                   />
                 </div>
