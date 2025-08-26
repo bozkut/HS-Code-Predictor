@@ -80,8 +80,15 @@ export const hsCodeDatabase: HSCode[] = [
     code: "4203.29.50",
     description: "Gloves, mittens and mitts, of leather or of composition leather",
     category: "Leather Goods",
-    keywords: ["leather", "gloves", "mittens", "accessories", "clothing", "hands"],
+    keywords: ["gloves", "mittens", "mitts", "leather", "hands", "winter"],
     tariffRate: "12.6%"
+  },
+  {
+    code: "4202.11.00",
+    description: "Trunks, suitcases, vanity cases, executive cases, briefcases, school satchels and similar containers, with outer surface of leather",
+    category: "Leather Goods",
+    keywords: ["wallet", "billfold", "bifold", "trifold", "leather", "genuine", "executive", "briefcase"],
+    tariffRate: "20%"
   },
   {
     code: "4202.92.45",
@@ -319,7 +326,7 @@ export const hsCodeDatabase: HSCode[] = [
   }
 ];
 
-// Enhanced helper function with improved matching algorithm
+// Enhanced helper function with precise matching algorithm
 export async function findMatchingHSCodes(
   title: string, 
   description: string, 
@@ -327,82 +334,88 @@ export async function findMatchingHSCodes(
   materials?: string,
   categoryId?: string
 ): Promise<HSCode[]> {
-  const searchText = `${title} ${description} ${category} ${materials || ""} ${categoryId || ""}`.toLowerCase();
-  console.log("Searching for matches in text:", searchText.substring(0, 200) + "...");
+  const titleLower = title.toLowerCase();
+  const descLower = description.toLowerCase();
+  const categoryLower = category.toLowerCase();
+  const materialsLower = (materials || "").toLowerCase();
   
-  // Enhanced matching with weighted scoring
-  const matches = hsCodeDatabase
-    .map(hsCode => {
-      let matchScore = 0;
-      let keywordMatches = 0;
-      let matchedKeywords: string[] = [];
-      
-      // Check each keyword for matches
+  console.log("=== MATCHING DEBUG ===");
+  console.log("Input:", { title, materials, category });
+  
+  // Enhanced matching with strict prioritization
+  const candidateMatches = hsCodeDatabase.map(hsCode => {
+    let matchScore = 0;
+    let matchDetails: string[] = [];
+    
+    // 1. EXACT PRODUCT TYPE MATCHES (highest priority - 50 points each)
+    const productTypeKeywords = ["mug", "cup", "bowl", "plate", "wallet", "purse", "handbag", "shoe", "boot", "shirt", "pants"];
+    productTypeKeywords.forEach(keyword => {
+      if (hsCode.keywords.includes(keyword)) {
+        if (titleLower.includes(keyword) || descLower.includes(keyword)) {
+          matchScore += 50;
+          matchDetails.push(`EXACT_PRODUCT: ${keyword}`);
+        }
+      }
+    });
+    
+    // 2. MATERIAL MATCHES (high priority - 20 points each)
+    if (materialsLower) {
       hsCode.keywords.forEach(keyword => {
-        const keywordLower = keyword.toLowerCase();
-        if (searchText.includes(keywordLower)) {
-          keywordMatches++;
-          matchedKeywords.push(keyword);
-          // Exact word matches get higher score
-          const exactMatch = new RegExp(`\\b${keywordLower}\\b`).test(searchText);
-          matchScore += exactMatch ? 3 : 1;
+        // Only count material matches for actual materials
+        const materialKeywords = ["ceramic", "porcelain", "leather", "cotton", "plastic", "glass", "wood", "metal", "fabric", "textile"];
+        if (materialKeywords.includes(keyword.toLowerCase())) {
+          if (materialsLower.includes(keyword.toLowerCase())) {
+            matchScore += 20;
+            matchDetails.push(`MATERIAL: ${keyword}`);
+          }
         }
       });
-      
-      // Bonus scoring for material matches (very important for HTS classification)
-      if (materials) {
-        const materialLower = materials.toLowerCase();
-        hsCode.keywords.forEach(keyword => {
-          const keywordLower = keyword.toLowerCase();
-          if (materialLower.includes(keywordLower) || keywordLower.includes(materialLower)) {
-            matchScore += 3; // Higher bonus for materials
-            if (!matchedKeywords.includes(keyword)) {
-              matchedKeywords.push(keyword);
-            }
+    }
+    
+    // 3. CATEGORY MATCHES (medium priority - 10 points)
+    const categoryWords = categoryLower.split(/[\s&]+/);
+    const hsCodeCategoryWords = hsCode.category.toLowerCase().split(/[\s&]+/);
+    
+    categoryWords.forEach(catWord => {
+      if (catWord.length > 3) { // Only meaningful words
+        hsCodeCategoryWords.forEach(hsCodeWord => {
+          if (catWord === hsCodeWord || (catWord.length > 5 && hsCodeWord.includes(catWord))) {
+            matchScore += 10;
+            matchDetails.push(`CATEGORY: ${catWord}→${hsCodeWord}`);
           }
         });
       }
-      
-      // Bonus for title matches (most important)
-      const titleLower = title.toLowerCase();
-      hsCode.keywords.forEach(keyword => {
-        const keywordLower = keyword.toLowerCase();
-        if (titleLower.includes(keywordLower) || keywordLower.includes(titleLower)) {
-          matchScore += 2;
-        }
-      });
-      
-      // Category relevance bonus
-      if (category) {
-        const categoryWords = category.toLowerCase().split(/[\s&]+/);
-        const hsCodeCategoryWords = hsCode.category.toLowerCase().split(/[\s&]+/);
-        
-        categoryWords.forEach(catWord => {
-          hsCodeCategoryWords.forEach(hsCodeWord => {
-            if (catWord.includes(hsCodeWord) || hsCodeWord.includes(catWord)) {
-              matchScore += 1;
-            }
-          });
-        });
+    });
+    
+    // 4. TITLE KEYWORD MATCHES (low priority - 5 points each)
+    const generalKeywords = hsCode.keywords.filter(k => 
+      !["mug", "cup", "bowl", "plate", "wallet", "purse", "handbag", "shoe", "boot", "shirt", "pants",
+        "ceramic", "porcelain", "leather", "cotton", "plastic", "glass", "wood", "metal", "fabric", "textile"].includes(k)
+    );
+    
+    generalKeywords.forEach(keyword => {
+      if (keyword.length > 3 && titleLower.includes(keyword.toLowerCase())) {
+        matchScore += 5;
+        matchDetails.push(`TITLE_KW: ${keyword}`);
       }
-      
-      if (matchScore > 0) {
-        console.log(`Match found for ${hsCode.code}: score=${matchScore}, keywords=${matchedKeywords.join(", ")}`);
-      }
-      
-      return { hsCode, matchScore, keywordMatches, matchedKeywords };
-    })
-    .filter(item => item.matchScore > 0)
-    .sort((a, b) => {
-      // Sort by match score first, then by number of keyword matches
-      if (b.matchScore !== a.matchScore) {
-        return b.matchScore - a.matchScore;
-      }
-      return b.keywordMatches - a.keywordMatches;
-    })
-    .slice(0, 8) // Return top 8 matches for better variety
+    });
+    
+    if (matchScore > 0) {
+      console.log(`${hsCode.code} (${hsCode.category}): score=${matchScore}, details=[${matchDetails.join(", ")}]`);
+    }
+    
+    return { hsCode, matchScore, matchDetails };
+  });
+  
+  // Filter and sort matches
+  const validMatches = candidateMatches
+    .filter(item => item.matchScore >= 20) // Require at least a material or product type match
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, 5)
     .map(item => item.hsCode);
-
-  console.log("Final matches returned:", matches.map(m => m.code));
-  return matches;
+  
+  console.log("Valid matches found:", validMatches.length);
+  console.log("=== END MATCHING DEBUG ===");
+  
+  return validMatches;
 }
