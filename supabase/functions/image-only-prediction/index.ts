@@ -140,8 +140,24 @@ serve(async (req) => {
 
 async function analyzeImageForHTS(imageData: string): Promise<any> {
   try {
+    console.log('Starting image analysis...');
+    
+    // Check if API key is available
+    if (!grokApiKey) {
+      console.error('GROK_API_KEY is not available');
+      return {
+        materials: ['unknown'],
+        product_type: 'API key missing',
+        classification_hints: ['Missing API key'],
+        confidence: 0.1
+      };
+    }
+    
+    console.log('API key available, making request to Grok...');
+    
     // Remove data URL prefix if present
     const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+    console.log('Image data prepared, base64 length:', base64Data.length);
     
     const prompt = `Analyze this product image for customs classification (HTS codes). Provide detailed analysis:
 
