@@ -10,8 +10,16 @@ const grokApiKey = Deno.env.get('GROK_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
+console.log('Environment check:');
+console.log('GROK_API_KEY exists:', !!grokApiKey);
+console.log('GROK_API_KEY length:', grokApiKey?.length || 0);
+console.log('GROK_API_KEY preview:', grokApiKey?.substring(0, 10) + '...' || 'undefined');
+
 if (!grokApiKey || !supabaseUrl || !supabaseAnonKey) {
   console.error('Missing required environment variables');
+  console.error('GROK_API_KEY:', !!grokApiKey);
+  console.error('SUPABASE_URL:', !!supabaseUrl);
+  console.error('SUPABASE_ANON_KEY:', !!supabaseAnonKey);
 }
 
 interface ImageOnlyRequest {
