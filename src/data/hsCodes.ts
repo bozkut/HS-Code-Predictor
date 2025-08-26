@@ -135,6 +135,29 @@ export const hsCodeDatabase: HSCode[] = [
     tariffRate: "Free"
   },
 
+  // Chapter 69 - Ceramic products
+  {
+    code: "6912.00.48",
+    description: "Ceramic tableware, kitchenware, other household articles and toilet articles",
+    category: "Ceramics & Porcelain",
+    keywords: ["ceramic", "porcelain", "mug", "cup", "tableware", "kitchenware", "household", "dishes"],
+    tariffRate: "8.5%"
+  },
+  {
+    code: "6911.10.38",
+    description: "Porcelain or china tableware and kitchenware", 
+    category: "Ceramics & Porcelain",
+    keywords: ["porcelain", "china", "tableware", "kitchenware", "cup", "mug", "plate", "bowl"],
+    tariffRate: "8%"
+  },
+  {
+    code: "6914.90.90",
+    description: "Other ceramic articles",
+    category: "Ceramics & Porcelain", 
+    keywords: ["ceramic", "porcelain", "decorative", "ornamental", "figurine"],
+    tariffRate: "8.5%"
+  },
+
   // Chapter 33 - Essential oils and resinoids; perfumery, cosmetic preparations
   {
     code: "3304.99.50",

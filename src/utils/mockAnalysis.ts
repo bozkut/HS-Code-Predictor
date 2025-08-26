@@ -212,11 +212,33 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
 
 // Fallback predictions when no specific matches are found
 const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] => {
+  // More intelligent fallback based on category and materials
+  if (productData.materials?.toLowerCase().includes('porcelain') || 
+      productData.title?.toLowerCase().includes('mug') ||
+      productData.description?.toLowerCase().includes('ceramic')) {
+    return [
+      {
+        code: "6912.00.48",
+        description: "Ceramic tableware, kitchenware, other household articles",
+        confidence: 75,
+        category: "Ceramics & Porcelain",
+        categoryId: productData.categoryId,
+        tariffRate: "8.5%",
+        sourceDocument: {
+          name: "Fallback HTS Classification",
+          type: 'LOCAL_DATABASE' as const,
+          version: "General Classification",
+          chapter: "Chapter 69"
+        }
+      }
+    ];
+  }
+  
   return [
     {
       code: "3926.90.99",
       description: "Other articles of plastics and articles of other materials",
-      confidence: 60,
+      confidence: 35,
       category: "General Merchandise",
       categoryId: productData.categoryId,
       tariffRate: "3.1%",
@@ -225,20 +247,6 @@ const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] =>
         type: 'LOCAL_DATABASE' as const,
         version: "General Classification",
         chapter: "Chapter 39"
-      }
-    },
-    {
-      code: "4823.90.86", 
-      description: "Other paper and paperboard, cut to size or shape",
-      confidence: 45,
-      category: "Paper & Stationery",
-      categoryId: productData.categoryId,
-      tariffRate: "Free",
-      sourceDocument: {
-        name: "Fallback HTS Classification",
-        type: 'LOCAL_DATABASE' as const,
-        version: "General Classification",
-        chapter: "Chapter 48"
       }
     }
   ];
