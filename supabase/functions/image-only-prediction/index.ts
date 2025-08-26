@@ -141,6 +141,8 @@ serve(async (req) => {
 async function analyzeImageForHTS(imageData: string): Promise<any> {
   try {
     console.log('Starting image analysis...');
+    console.log('GROK_API_KEY check:', !!grokApiKey);
+    console.log('GROK_API_KEY length:', grokApiKey?.length || 0);
     
     // Check if API key is available
     if (!grokApiKey) {
