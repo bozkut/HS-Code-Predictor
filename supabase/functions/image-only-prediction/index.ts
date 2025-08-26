@@ -167,7 +167,7 @@ Respond ONLY with valid JSON in this exact format:
         'Authorization': `Bearer ${grokApiKey}`
       },
       body: JSON.stringify({
-        model: 'grok-4-latest',
+        model: 'grok-vision-beta',
         messages: [
           {
             role: 'user',
@@ -185,8 +185,8 @@ Respond ONLY with valid JSON in this exact format:
             ]
           }
         ],
-        stream: false,
-        temperature: 0.1
+        temperature: 0.1,
+        max_tokens: 2048
       }),
     });
 
@@ -195,7 +195,7 @@ Respond ONLY with valid JSON in this exact format:
       console.error('Grok API error status:', response.status);
       console.error('Grok API error details:', errorText);
       console.error('Request body was:', JSON.stringify({
-        model: 'grok-4-latest',
+        model: 'grok-vision-beta',
         messages: 'truncated for logs'
       }));
       return null;
