@@ -40,7 +40,7 @@ const performSemanticAnalysis = async (productData: ProductData, matchingHSCodes
   }
 };
 
-// Analyze product and return HS code predictions using real database with AI enhancement
+// Rebuilt prediction engine focused on accuracy
 export const analyzeProduct = async (productData: ProductData): Promise<{
   predictions: HSCodePrediction[];
   analysisDetails: {
@@ -49,27 +49,22 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
   };
 }> => {
   const startTime = Date.now();
-
-  // Enhanced factors with official USITC integration
-  const factors = [
-    "Product Title Analysis",
-    "Description Keyword Matching", 
-    "Category Classification",
-    "HS Code Database Matching",
-    "Official USITC HTS Lookup",
-    "AI Semantic Analysis (Gemini)",
-    ...(productData.materials ? ["Material Composition Analysis"] : []),
-    ...(productData.image ? ["Image Recognition Analysis"] : [])
-  ];
-
-  // Step 1: Find matching HS codes from our local database
-  console.log("Product data for analysis:", {
+  console.log("=== STARTING PRODUCT ANALYSIS ===");
+  console.log("Product:", {
     title: productData.title,
     materials: productData.materials,
     category: productData.category,
     description: productData.description?.substring(0, 100) + "..."
   });
-  
+
+  const factors = [
+    "Advanced keyword matching with material prioritization",
+    "Precision scoring with product type identification",
+    "Category-based classification",
+    "Material composition analysis"
+  ];
+
+  // Find matching HS codes using our enhanced database
   const matchingHSCodes = await findMatchingHSCodes(
     productData.title,
     productData.description,
@@ -77,165 +72,119 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
     productData.materials,
     productData.categoryId
   );
-  
-  console.log("Found matching HS codes:", matchingHSCodes.length, matchingHSCodes.map(c => ({ code: c.code, category: c.category })));
+
+  console.log(`Found ${matchingHSCodes.length} potential matches`);
 
   let predictions: HSCodePrediction[] = [];
 
-  // Step 2: Get official USITC data for enhanced accuracy
-  try {
-    const fullDescription = `${productData.title} ${productData.description} ${productData.materials || ''}`.trim();
-    const enhancedResult = await HTSLookupService.enhancedPrediction(fullDescription, 
-      matchingHSCodes.map(hsCode => ({ hsCode: hsCode.code, ...hsCode }))
-    );
-    
-    if (enhancedResult.predictions.length > 0) {
-      // Use enhanced predictions with official USITC validation
-      predictions = enhancedResult.predictions.map((pred: any) => ({
-        code: pred.hsCode,
-        description: pred.description,
-        confidence: pred.confidence || 85,
-        category: pred.category || pred.officialEntry?.category || "Official Classification",
-        categoryId: productData.categoryId,
-        tariffRate: pred.officialEntry?.tariffInfo?.generalRate || pred.tariffInfo?.generalRate || "Contact Customs",
-        isOfficiallyValidated: pred.isOfficiallyValidated || pred.isOfficialMatch || false,
-        officialSource: pred.officialEntry?.officialSource || (pred.isOfficialMatch ? "USITC HTS 2025 Revision 19" : undefined),
-        sourceDocument: pred.isOfficialMatch || pred.isOfficiallyValidated ? {
-          name: "USITC Harmonized Tariff Schedule",
-          type: 'USITC_DATABASE' as const,
-          version: "2025 Revision 19",
-          chapter: pred.hsCode ? `Chapter ${pred.hsCode.substring(0, 2)}` : undefined,
-          url: "https://hts.usitc.gov/",
-          lastUpdated: new Date().toISOString().split('T')[0]
-        } : {
-          name: "Local HTS Database",
-          type: 'LOCAL_DATABASE' as const,
-          version: "Compiled Database",
-          chapter: pred.hsCode ? `Chapter ${pred.hsCode.substring(0, 2)}` : undefined
-        },
-        tariffDetails: pred.officialEntry?.tariffInfo ? {
-          general: pred.officialEntry.tariffInfo.generalRate,
-          special: pred.officialEntry.tariffInfo.specialRate,
-          column2: pred.officialEntry.tariffInfo.column2Rate
-        } : undefined
-      }));
-    } else {
-      throw new Error("No enhanced predictions available");
-    }
-  } catch (error) {
-    console.log("Enhanced prediction failed, using fallback analysis:", error);
-    
-    // Fallback to local analysis with semantic enhancement
-    if (matchingHSCodes.length > 0) {
-      // Perform AI semantic analysis
-      const semanticResults = await performSemanticAnalysis(productData, matchingHSCodes);
+  if (matchingHSCodes.length > 0) {
+    // Convert to predictions with enhanced confidence calculation
+    predictions = matchingHSCodes.map((hsCode, index) => {
+      // Start with position-based confidence (85% for first, decreasing)
+      let confidence = Math.max(45, 85 - (index * 12));
       
-      if (semanticResults && semanticResults.matches && semanticResults.matches.length > 0) {
-        // Use AI-enhanced results
-        predictions = semanticResults.matches.map((match: any) => {
-          const hsCode = matchingHSCodes.find(code => code.code === match.code);
-          return {
-            code: match.code,
-            description: hsCode?.description || match.reasoning,
-            confidence: Math.min(95, match.confidence + 5), // Boost AI-analyzed confidence
-            category: hsCode?.category || "AI Classified",
-            categoryId: productData.categoryId,
-            tariffRate: hsCode?.tariffRate || "Contact Customs",
-            sourceDocument: {
-              name: "AI Semantic Analysis (Gemini) + Local Database",
-              type: 'AI_SEMANTIC' as const,
-              version: "Gemini Pro Enhanced",
-              chapter: match.code ? `Chapter ${match.code.substring(0, 2)}` : undefined
-            }
-          };
-        });
-        
-        // Add remaining keyword matches if AI didn't cover all
-        const aiCodes = semanticResults.matches.map((m: any) => m.code);
-        const remainingCodes = matchingHSCodes
-          .filter(code => !aiCodes.includes(code.code))
-          .slice(0, 2); // Add up to 2 more
-          
-        remainingCodes.forEach((hsCode, index) => {
-          predictions.push({
-            code: hsCode.code,
-            description: hsCode.description,
-            confidence: Math.max(40, 75 - (index * 15)), // Lower confidence for non-AI matches
-            category: hsCode.category,
-            categoryId: productData.categoryId,
-            tariffRate: hsCode.tariffRate,
-            sourceDocument: {
-              name: "Local HTS Database",
-              type: 'LOCAL_DATABASE' as const,
-              version: "Compiled Database",
-              chapter: hsCode.code ? `Chapter ${hsCode.code.substring(0, 2)}` : undefined
-            }
-          });
-        });
-      } else {
-        // Enhanced keyword matching with better confidence calculation
-        predictions = matchingHSCodes.map((hsCode, index) => {
-          let baseConfidence = 90 - (index * 8); // Start higher, decrease less per position
-          
-          // Calculate relevance bonuses
-          const titleWords = productData.title.toLowerCase().split(' ');
-          const materialWords = (productData.materials || '').toLowerCase().split(' ');
-          
-          // Material match bonus (very important for HTS classification)
-          const materialMatches = hsCode.keywords.filter(keyword => 
-            materialWords.some(word => word.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(word))
-          ).length;
-          if (materialMatches > 0) baseConfidence += materialMatches * 5;
-          
-          // Title relevance bonus
-          const titleMatches = hsCode.keywords.filter(keyword =>
-            titleWords.some(word => word.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(word))
-          ).length;
-          if (titleMatches > 0) baseConfidence += titleMatches * 3;
-          
-          // Category match bonus
-          if (productData.category && hsCode.category.toLowerCase().includes(productData.category.toLowerCase().split(' ')[0])) {
-            baseConfidence += 5;
-          }
-          
-          // Description length bonus (more detail = higher confidence)
-          if (productData.description.length > 150) baseConfidence += 3;
-          if (productData.description.length > 300) baseConfidence += 2;
-          
-          // Image availability bonus
-          if (productData.image) baseConfidence += 8;
-          
-          // Ensure confidence stays within reasonable bounds
-          const confidence = Math.min(95, Math.max(35, baseConfidence));
-
-          return {
-            code: hsCode.code,
-            description: hsCode.description,
-            confidence,
-            category: hsCode.category,
-            categoryId: productData.categoryId,
-            tariffRate: hsCode.tariffRate,
-            sourceDocument: {
-              name: "Enhanced Local HTS Database",
-              type: 'LOCAL_DATABASE' as const,
-              version: "Enhanced Keyword Matching v2.0",
-              chapter: hsCode.code ? `Chapter ${hsCode.code.substring(0, 2)}` : undefined
-            }
-          };
-        });
+      console.log(`Processing HS Code: ${hsCode.code} (${hsCode.category})`);
+      
+      // Enhanced scoring based on match quality
+      const titleLower = productData.title.toLowerCase();
+      const materialsLower = (productData.materials || '').toLowerCase();
+      const descLower = productData.description.toLowerCase();
+      
+      // High-value keyword matches (product type identification)
+      const productTypeKeywords = ['mug', 'cup', 'bowl', 'plate', 'wallet', 'handbag', 'shoe', 'shirt', 'pants', 'dress'];
+      const productTypeMatches = hsCode.keywords.filter(keyword => 
+        productTypeKeywords.includes(keyword) && 
+        (titleLower.includes(keyword) || descLower.includes(keyword))
+      ).length;
+      
+      if (productTypeMatches > 0) {
+        confidence += productTypeMatches * 15; // Major boost for product type matches
+        console.log(`  Product type match bonus: +${productTypeMatches * 15}%`);
       }
-    }
+
+      // Material matches (critical for HTS classification)
+      const materialKeywords = ['ceramic', 'porcelain', 'leather', 'cotton', 'plastic', 'glass', 'metal', 'wood', 'fabric'];
+      const materialMatches = hsCode.keywords.filter(keyword => 
+        materialKeywords.includes(keyword) && 
+        materialsLower.includes(keyword)
+      ).length;
+      
+      if (materialMatches > 0) {
+        confidence += materialMatches * 12; // Strong boost for material matches
+        console.log(`  Material match bonus: +${materialMatches * 12}%`);
+      }
+
+      // Category alignment
+      const categoryWords = productData.category.toLowerCase().split(/[\s&]+/);
+      const hsCategoryWords = hsCode.category.toLowerCase().split(/[\s&]+/);
+      
+      const categoryMatches = categoryWords.filter(catWord => 
+        catWord.length > 3 && 
+        hsCategoryWords.some(hsWord => hsWord.includes(catWord) || catWord.includes(hsWord))
+      ).length;
+      
+      if (categoryMatches > 0) {
+        confidence += categoryMatches * 8;
+        console.log(`  Category match bonus: +${categoryMatches * 8}%`);
+      }
+
+      // Title keyword matches (lower priority)
+      const titleKeywordMatches = hsCode.keywords.filter(keyword => 
+        keyword.length > 3 && 
+        !productTypeKeywords.includes(keyword) && 
+        !materialKeywords.includes(keyword) &&
+        titleLower.includes(keyword)
+      ).length;
+      
+      if (titleKeywordMatches > 0) {
+        confidence += titleKeywordMatches * 4;
+        console.log(`  Title keyword bonus: +${titleKeywordMatches * 4}%`);
+      }
+
+      // Description quality bonus
+      if (productData.description.length > 100) confidence += 3;
+      if (productData.description.length > 200) confidence += 2;
+      
+      // Material specified bonus
+      if (productData.materials && productData.materials.length > 5) confidence += 5;
+      
+      // Image bonus
+      if (productData.image) confidence += 5;
+
+      // Cap confidence at reasonable levels
+      confidence = Math.min(92, Math.max(30, confidence));
+      
+      console.log(`  Final confidence: ${confidence}%`);
+
+      return {
+        code: hsCode.code,
+        description: hsCode.description,
+        confidence,
+        category: hsCode.category,
+        categoryId: productData.categoryId,
+        tariffRate: hsCode.tariffRate || "Contact Customs",
+        sourceDocument: {
+          name: "Enhanced Local HTS Database",
+          type: 'LOCAL_DATABASE' as const,
+          version: "Precision Matching v3.0",
+          chapter: hsCode.code ? `Chapter ${hsCode.code.substring(0, 2)}` : undefined
+        }
+      };
+    });
   }
 
-  // If no matches found, provide fallback predictions
+  // If no matches found, use smart fallback
   if (predictions.length === 0) {
+    console.log("No matches found, using smart fallback");
     predictions = getFallbackPredictions(productData);
   }
 
   const processingTime = Date.now() - startTime;
+  console.log(`=== ANALYSIS COMPLETE in ${processingTime}ms ===`);
+  console.log("Top prediction:", predictions[0] ? `${predictions[0].code} (${predictions[0].confidence}%)` : "None");
 
   return {
-    predictions: predictions.slice(0, 5), // Return top 5 predictions
+    predictions: predictions.slice(0, 5),
     analysisDetails: {
       processingTime,
       factors
