@@ -102,10 +102,11 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
+    // Only require an image to be uploaded
+    if (!formData.image && !imageUrl) {
       toast({
-        title: "Missing required fields",
-        description: "Please fill in title, description, and category",
+        title: "Image required",
+        description: "Please upload an image to run the analysis",
         variant: "destructive"
       });
       return;
@@ -170,7 +171,7 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
           {/* Product Title */}
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-medium text-foreground">
-              Product Title *
+              Product Title <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <Input
               id="title"
@@ -178,14 +179,13 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter product title..."
               className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-              required
             />
           </div>
 
           {/* Product Description */}
           <div className="space-y-2">
             <Label htmlFor="description" className="text-sm font-medium text-foreground">
-              Product Description *
+              Product Description <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <Textarea
               id="description"
@@ -193,14 +193,13 @@ export const ProductForm = ({ onAnalyze, isAnalyzing }: ProductFormProps) => {
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Detailed product description..."
               className="min-h-[120px] transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-              required
             />
           </div>
 
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="category" className="text-sm font-medium text-foreground">
-              Category *
+              Category <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
               <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-primary/20">
