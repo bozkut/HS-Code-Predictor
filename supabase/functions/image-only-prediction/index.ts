@@ -92,19 +92,28 @@ serve(async (req) => {
     console.log('Generated predictions:', predictions);
 
     // Try to store the prediction in database (but don't fail if this errors)
-    try {
-      await supabaseClient
-        .from('hts_predictions')
-        .insert({
-          user_id: userId,
-          product_title: imageAnalysis.product_type || 'Image-based classification',
-          product_description: `Material: ${imageAnalysis.materials?.join(', ') || 'Unknown'}. Features: ${imageAnalysis.features?.join(', ') || 'None identified'}.`,
-          predicted_codes: predictions.map(p => ({ code: p.code, confidence: p.confidence })),
-          confidence_score: Math.round((predictions[0]?.confidence || 0) * 100)
-        });
-      console.log('Database insert successful');
-    } catch (dbError) {
-      console.error('Database error (non-fatal):', dbError);
+    if (userId) {
+      try {
+        const { error: dbError } = await supabaseClient
+          .from('hts_predictions')
+          .insert({
+            user_id: userId,
+            product_title: imageAnalysis.product_type || 'Image-based classification',
+            product_description: `Material: ${imageAnalysis.materials?.join(', ') || 'Unknown'}. Features: ${imageAnalysis.features?.join(', ') || 'None identified'}.`,
+            predicted_codes: predictions,
+            confidence_score: Math.round((predictions[0]?.confidence || 0) * 100)
+          });
+        
+        if (dbError) {
+          console.error('Database error (non-fatal):', dbError);
+        } else {
+          console.log('Database insert successful');
+        }
+      } catch (dbError) {
+        console.error('Database error (non-fatal):', dbError);
+      }
+    } else {
+      console.log('No user ID - skipping database insert');
     }
 
     const response = {
