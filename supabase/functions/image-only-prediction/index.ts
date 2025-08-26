@@ -167,7 +167,7 @@ Respond ONLY with valid JSON in this exact format:
         'Authorization': `Bearer ${grokApiKey}`
       },
       body: JSON.stringify({
-        model: 'grok-vision-beta',
+        model: 'grok-4-latest',
         messages: [
           {
             role: 'user',
@@ -185,14 +185,19 @@ Respond ONLY with valid JSON in this exact format:
             ]
           }
         ],
-        temperature: 0.1,
-        max_tokens: 2048
+        stream: false,
+        temperature: 0.1
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Grok API error:', errorText);
+      console.error('Grok API error status:', response.status);
+      console.error('Grok API error details:', errorText);
+      console.error('Request body was:', JSON.stringify({
+        model: 'grok-4-latest',
+        messages: 'truncated for logs'
+      }));
       return null;
     }
 
