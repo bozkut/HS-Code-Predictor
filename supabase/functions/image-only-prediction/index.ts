@@ -206,20 +206,34 @@ Respond ONLY with valid JSON in this exact format:
         model: 'grok-vision-beta',
         messages: 'truncated for logs'
       }));
-      return null;
+      throw new Error(`Grok API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Grok API response received successfully');
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid Grok API response structure:', data);
+      throw new Error('Invalid response structure from Grok API');
+    }
+    
     const analysisText = data.choices[0].message.content;
     
     try {
       // Extract JSON from response
       const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        console.log('Successfully parsed image analysis');
+        return parsed;
       } else {
         console.error('No JSON found in response:', analysisText);
-        return null;
+        return {
+          materials: ['unknown'],
+          product_type: 'unidentified',
+          classification_hints: [analysisText.substring(0, 200)],
+          confidence: 0.3
+        };
       }
     } catch (parseError) {
       console.error('Failed to parse JSON:', analysisText);
