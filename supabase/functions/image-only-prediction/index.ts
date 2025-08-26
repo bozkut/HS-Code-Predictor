@@ -99,9 +99,8 @@ serve(async (req) => {
           user_id: userId,
           product_title: imageAnalysis.product_type || 'Image-based classification',
           product_description: `Material: ${imageAnalysis.materials?.join(', ') || 'Unknown'}. Features: ${imageAnalysis.features?.join(', ') || 'None identified'}.`,
-          predicted_hts_code: predictions[0]?.code || '',
-          confidence_score: predictions[0]?.confidence || 0,
-          image_analysis_data: imageAnalysis
+          predicted_codes: predictions.map(p => ({ code: p.code, confidence: p.confidence })),
+          confidence_score: Math.round((predictions[0]?.confidence || 0) * 100)
         });
       console.log('Database insert successful');
     } catch (dbError) {
