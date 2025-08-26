@@ -8,6 +8,7 @@ import { PDFProcessor } from '@/components/PDFProcessor';
 import { TariffCalculator } from '@/components/TariffCalculator';
 import { HTSChangeTracker } from '@/components/HTSChangeTracker';
 import { BulkAnalysis } from '@/components/BulkAnalysis';
+import { ImageOnlyAnalysis } from '@/components/ImageOnlyAnalysis';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -140,8 +141,9 @@ const Index = () => {
       <section className="py-12">
         <div className="container mx-auto px-6">
           <Tabs defaultValue="predict" className="w-full max-w-7xl mx-auto">
-            <TabsList className="grid w-full grid-cols-6 max-w-4xl mx-auto mb-8">
+            <TabsList className="grid w-full grid-cols-7 max-w-5xl mx-auto mb-8">
               <TabsTrigger value="predict">HS Prediction</TabsTrigger>
+              <TabsTrigger value="image-only">Image Only</TabsTrigger>
               <TabsTrigger value="tariff">Tariff Calculator</TabsTrigger>
               <TabsTrigger value="tracker">Change Tracker</TabsTrigger>
               <TabsTrigger value="bulk">Bulk Analysis</TabsTrigger>
@@ -234,6 +236,10 @@ const Index = () => {
                   )}
                 </div>
               </div>
+            </TabsContent>
+            
+            <TabsContent value="image-only">
+              <ImageOnlyAnalysis />
             </TabsContent>
             
             <TabsContent value="tariff">
