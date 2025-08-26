@@ -66,16 +66,23 @@ serve(async (req) => {
 
     console.log('Starting image analysis...');
     
-    // Simple fallback analysis for now
-    const imageAnalysis = {
-      materials: ['plastic', 'metal'],
-      product_type: 'electronic device',
-      features: ['portable', 'consumer electronics'],
-      classification_hints: ['Electronic device classification'],
-      confidence: 0.7,
-      construction_method: 'assembled components',
-      intended_use: 'consumer use'
-    };
+    // Try real image analysis with Grok API first
+    let imageAnalysis;
+    if (grokApiKey) {
+      console.log('Using Grok API for image analysis');
+      imageAnalysis = await analyzeImageWithGrok(request.imageData);
+    } else {
+      console.log('No API key - using fallback analysis');
+      imageAnalysis = {
+        materials: ['unknown'],
+        product_type: 'unidentified product',
+        features: ['requires manual classification'],
+        classification_hints: ['No AI analysis available'],
+        confidence: 0.3,
+        construction_method: 'unknown',
+        intended_use: 'unknown'
+      };
+    }
 
     console.log('Generated analysis:', imageAnalysis);
 
@@ -134,6 +141,100 @@ serve(async (req) => {
   }
 });
 
+async function analyzeImageWithGrok(imageData: string): Promise<any> {
+  try {
+    console.log('Starting Grok image analysis...');
+    
+    // Remove data URL prefix if present
+    const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    const prompt = `Analyze this product image for customs classification (HTS codes). Provide detailed analysis:
+
+1. MATERIAL COMPOSITION: Identify all visible materials (plastic, metal, textile, leather, wood, glass, ceramic, etc.)
+2. PRODUCT TYPE: What is this product? Be specific about its function and category
+3. CONSTRUCTION: How is it made? Assembly method, parts, components
+4. INTENDED USE: What is this product used for? Target market (consumer, industrial, etc.)
+5. KEY FEATURES: Any special characteristics affecting classification
+6. VISIBLE TEXT: Any brand names, model numbers, labels, or text
+7. SIZE/SCALE: Estimate dimensions if possible from context
+8. HTS CLASSIFICATION HINTS: Specific factors that would determine the correct HTS code
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "materials": ["primary_material", "secondary_material"],
+  "product_type": "specific product category",
+  "construction_method": "how it's made",
+  "intended_use": "primary function",
+  "features": ["feature1", "feature2"],
+  "visible_text": "any text seen on product",
+  "estimated_size": "size description",
+  "classification_hints": ["hint1", "hint2"],
+  "confidence": 0.85,
+  "suggested_hts_chapters": ["chapter_number_1", "chapter_number_2"]
+}`;
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${grokApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'grok-vision-beta',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Data}`
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 2048
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Grok API error:', response.status, errorText);
+      throw new Error(`Grok API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Grok API response received');
+    
+    const analysisText = data.choices[0].message.content;
+    
+    try {
+      // Extract JSON from response
+      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        console.log('Successfully parsed Grok analysis');
+        return parsed;
+      } else {
+        console.error('No JSON found in Grok response');
+        return null;
+      }
+    } catch (parseError) {
+      console.error('Failed to parse Grok JSON:', parseError);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error in Grok image analysis:', error);
+    return null;
+  }
+}
+
 function generateHTSPredictions(imageAnalysis: any): HTSPrediction[] {
   const predictions: HTSPrediction[] = [];
   
@@ -141,8 +242,10 @@ function generateHTSPredictions(imageAnalysis: any): HTSPrediction[] {
   const materials = imageAnalysis.materials || [];
   const productType = imageAnalysis.product_type || '';
   
-  // Common HTS code patterns based on materials and product types
+  // Comprehensive HTS code patterns based on materials and product types
   const htsMapping = [
+    // Bags and luggage
+    { keywords: ['bag', 'luggage', 'backpack', 'handbag', 'purse', 'tote', 'suitcase'], codes: ['4202.12.80', '4202.22.80', '4202.92.30'], chapter: 'Chapter 42: Leather goods' },
     // Electronics
     { keywords: ['electronic', 'device', 'circuit'], codes: ['8517.62.00', '8471.30.01', '9013.80.90'], chapter: 'Chapter 84-85: Electronics' },
     // Plastics
@@ -151,6 +254,8 @@ function generateHTSPredictions(imageAnalysis: any): HTSPrediction[] {
     { keywords: ['metal', 'steel', 'aluminum'], codes: ['7323.93.00', '7615.19.00', '8302.41.60'], chapter: 'Chapter 72-83: Metals' },
     // Textiles
     { keywords: ['textile', 'fabric', 'cotton'], codes: ['6109.10.00', '6203.42.40', '6204.62.40'], chapter: 'Chapter 61-62: Textiles' },
+    // Leather
+    { keywords: ['leather'], codes: ['4202.12.80', '4203.29.80', '4205.00.80'], chapter: 'Chapter 42: Leather goods' },
   ];
   
   // Find matching HTS codes
@@ -162,7 +267,7 @@ function generateHTSPredictions(imageAnalysis: any): HTSPrediction[] {
           predictions.push({
             code: code,
             description: `${productType} - ${keyword} based classification`,
-            confidence: Math.min(0.95, (imageAnalysis.confidence || 0.7) + 0.1),
+            confidence: Math.min(0.95, (imageAnalysis.confidence || 0.7)),
             category: mapping.chapter,
             sourceDocument: {
               name: 'AI Image Analysis',

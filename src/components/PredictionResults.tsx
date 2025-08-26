@@ -147,16 +147,16 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                 
                 <div className="text-right space-y-2">
                   <div className="flex items-center gap-2">
-                    {getConfidenceIcon(prediction.confidence)}
-                    <span className={`font-semibold ${getConfidenceColor(prediction.confidence)}`}>
-                      {prediction.confidence}%
+                    {getConfidenceIcon(Math.round(prediction.confidence * 100))}
+                    <span className={`font-semibold ${getConfidenceColor(Math.round(prediction.confidence * 100))}`}>
+                      {Math.round(prediction.confidence * 100)}%
                     </span>
                   </div>
                   <Badge 
-                    variant={prediction.confidence >= 80 ? "default" : prediction.confidence >= 60 ? "secondary" : "outline"}
+                    variant={Math.round(prediction.confidence * 100) >= 80 ? "default" : Math.round(prediction.confidence * 100) >= 60 ? "secondary" : "outline"}
                     className="text-xs"
                   >
-                    {getConfidenceBadge(prediction.confidence)}
+                    {getConfidenceBadge(Math.round(prediction.confidence * 100))}
                   </Badge>
                 </div>
               </div>
@@ -169,10 +169,10 @@ export const PredictionResults = ({ predictions, analysisDetails }: PredictionRe
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Confidence Level</span>
-                    <span>{prediction.confidence}%</span>
+                    <span>{Math.round(prediction.confidence * 100)}%</span>
                   </div>
                   <Progress 
-                    value={prediction.confidence} 
+                    value={Math.round(prediction.confidence * 100)} 
                     className="h-2"
                   />
                 </div>
