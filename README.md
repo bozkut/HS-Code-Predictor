@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/2154cf3d-88d6-4b9b-95a3-7297f7b052c1
+**URL**: https://hscodepredictor.boraozkut.com
 
 ## How can I edit this code?
 
@@ -59,13 +59,6 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2154cf3d-88d6-4b9b-95a3-7297f7b052c1) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
 
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
