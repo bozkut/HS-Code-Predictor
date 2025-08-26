@@ -164,16 +164,40 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
           });
         });
       } else {
-        // Fallback to keyword matching with enhanced scoring
+        // Enhanced keyword matching with better confidence calculation
         predictions = matchingHSCodes.map((hsCode, index) => {
-          let confidence = 85 - (index * 10);
+          let baseConfidence = 90 - (index * 8); // Start higher, decrease less per position
           
-          // Boost confidence based on available data
-          if (productData.materials) confidence += 8;
-          if (productData.image) confidence += 12;
-          if (productData.description.length > 100) confidence += 5;
+          // Calculate relevance bonuses
+          const titleWords = productData.title.toLowerCase().split(' ');
+          const materialWords = (productData.materials || '').toLowerCase().split(' ');
           
-          confidence = Math.min(95, Math.max(45, confidence));
+          // Material match bonus (very important for HTS classification)
+          const materialMatches = hsCode.keywords.filter(keyword => 
+            materialWords.some(word => word.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(word))
+          ).length;
+          if (materialMatches > 0) baseConfidence += materialMatches * 5;
+          
+          // Title relevance bonus
+          const titleMatches = hsCode.keywords.filter(keyword =>
+            titleWords.some(word => word.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(word))
+          ).length;
+          if (titleMatches > 0) baseConfidence += titleMatches * 3;
+          
+          // Category match bonus
+          if (productData.category && hsCode.category.toLowerCase().includes(productData.category.toLowerCase().split(' ')[0])) {
+            baseConfidence += 5;
+          }
+          
+          // Description length bonus (more detail = higher confidence)
+          if (productData.description.length > 150) baseConfidence += 3;
+          if (productData.description.length > 300) baseConfidence += 2;
+          
+          // Image availability bonus
+          if (productData.image) baseConfidence += 8;
+          
+          // Ensure confidence stays within reasonable bounds
+          const confidence = Math.min(95, Math.max(35, baseConfidence));
 
           return {
             code: hsCode.code,
@@ -183,9 +207,9 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
             categoryId: productData.categoryId,
             tariffRate: hsCode.tariffRate,
             sourceDocument: {
-              name: "Local HTS Database",
+              name: "Enhanced Local HTS Database",
               type: 'LOCAL_DATABASE' as const,
-              version: "Compiled Database",
+              version: "Enhanced Keyword Matching v2.0",
               chapter: hsCode.code ? `Chapter ${hsCode.code.substring(0, 2)}` : undefined
             }
           };
@@ -210,42 +234,113 @@ export const analyzeProduct = async (productData: ProductData): Promise<{
   };
 };
 
-// Fallback predictions when no specific matches are found
+// Enhanced fallback predictions with intelligent category-based classification
 const getFallbackPredictions = (productData: ProductData): HSCodePrediction[] => {
-  // More intelligent fallback based on category and materials
-  if (productData.materials?.toLowerCase().includes('porcelain') || 
-      productData.title?.toLowerCase().includes('mug') ||
-      productData.description?.toLowerCase().includes('ceramic')) {
+  const title = productData.title?.toLowerCase() || '';
+  const description = productData.description?.toLowerCase() || '';
+  const materials = productData.materials?.toLowerCase() || '';
+  const category = productData.category?.toLowerCase() || '';
+  
+  // Ceramic/Porcelain products
+  if (materials.includes('porcelain') || materials.includes('ceramic') || 
+      title.includes('mug') || title.includes('cup') || title.includes('bowl') ||
+      description.includes('ceramic') || description.includes('porcelain')) {
     return [
       {
         code: "6912.00.48",
         description: "Ceramic tableware, kitchenware, other household articles",
-        confidence: 75,
+        confidence: 80,
         category: "Ceramics & Porcelain",
         categoryId: productData.categoryId,
         tariffRate: "8.5%",
         sourceDocument: {
-          name: "Fallback HTS Classification",
+          name: "Smart Fallback Classification",
           type: 'LOCAL_DATABASE' as const,
-          version: "General Classification",
+          version: "Material-Based Classification",
           chapter: "Chapter 69"
         }
       }
     ];
   }
   
+  // Textile/Clothing products  
+  if (materials.includes('cotton') || materials.includes('fabric') || materials.includes('textile') ||
+      category.includes('clothing') || category.includes('apparel') ||
+      title.includes('shirt') || title.includes('pants') || title.includes('dress')) {
+    return [
+      {
+        code: "6109.10.00",
+        description: "T-shirts, singlets and other vests, knitted or crocheted, of cotton",
+        confidence: 70,
+        category: "Textiles & Clothing",
+        categoryId: productData.categoryId,
+        tariffRate: "16.5%",
+        sourceDocument: {
+          name: "Smart Fallback Classification",
+          type: 'LOCAL_DATABASE' as const,
+          version: "Category-Based Classification",
+          chapter: "Chapter 61"
+        }
+      }
+    ];
+  }
+  
+  // Electronic products
+  if (category.includes('electronic') || category.includes('tech') ||
+      title.includes('phone') || title.includes('computer') || title.includes('device') ||
+      description.includes('electronic') || description.includes('digital')) {
+    return [
+      {
+        code: "8543.70.96",
+        description: "Other electrical machines and apparatus, having individual functions",
+        confidence: 65,
+        category: "Electronics & Electrical",
+        categoryId: productData.categoryId,
+        tariffRate: "2.6%",
+        sourceDocument: {
+          name: "Smart Fallback Classification",
+          type: 'LOCAL_DATABASE' as const,
+          version: "Category-Based Classification",
+          chapter: "Chapter 85"
+        }
+      }
+    ];
+  }
+  
+  // Home & Garden products
+  if (category.includes('home') || category.includes('garden') || category.includes('furniture') ||
+      title.includes('furniture') || title.includes('decor') || description.includes('household')) {
+    return [
+      {
+        code: "9403.60.80",
+        description: "Other wooden furniture",
+        confidence: 60,
+        category: "Furniture & Home",
+        categoryId: productData.categoryId,
+        tariffRate: "Free",
+        sourceDocument: {
+          name: "Smart Fallback Classification",
+          type: 'LOCAL_DATABASE' as const,
+          version: "Category-Based Classification",
+          chapter: "Chapter 94"
+        }
+      }
+    ];
+  }
+  
+  // Generic fallback
   return [
     {
       code: "3926.90.99",
       description: "Other articles of plastics and articles of other materials",
-      confidence: 35,
+      confidence: 25,
       category: "General Merchandise",
       categoryId: productData.categoryId,
       tariffRate: "3.1%",
       sourceDocument: {
-        name: "Fallback HTS Classification",
+        name: "Generic Fallback Classification",
         type: 'LOCAL_DATABASE' as const,
-        version: "General Classification",
+        version: "Default Classification",
         chapter: "Chapter 39"
       }
     }
